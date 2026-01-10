@@ -4,7 +4,6 @@ import com.haui.istar.dto.admin.UpdateUserRequest;
 import com.haui.istar.dto.common.UserDto;
 import com.haui.istar.dto.admin.UserSearchCriteria;
 import com.haui.istar.exception.BadRequestException;
-import com.haui.istar.exception.ResourceNotFoundException;
 import com.haui.istar.model.User;
 import com.haui.istar.model.UserRole;
 import com.haui.istar.repository.UserRepository;
@@ -20,7 +19,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,10 +41,9 @@ public class AdminUserServiceImpl implements AdminUserService {
     public Page<UserDto> searchUsers(UserSearchCriteria criteria) {
         Sort sort = Sort.by(
                 criteria.getSortDirection().equalsIgnoreCase("DESC")
-                    ? Sort.Direction.DESC
-                    : Sort.Direction.ASC,
-                criteria.getSortBy()
-        );
+                        ? Sort.Direction.DESC
+                        : Sort.Direction.ASC,
+                criteria.getSortBy());
 
         Pageable pageable = PageRequest.of(criteria.getPage(), criteria.getSize(), sort);
         Specification<User> spec = UserSpecification.buildSpecification(criteria);
@@ -179,4 +176,3 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .build();
     }
 }
-

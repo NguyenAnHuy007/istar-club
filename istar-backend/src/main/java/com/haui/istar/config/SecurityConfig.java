@@ -36,6 +36,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/api/application-form/**").permitAll()
                         .requestMatchers("/api/**").hasRole("0")
                         .requestMatchers("/api/module-a/**").hasRole("1")
                         .requestMatchers("/api/module-b/**").hasRole("2")

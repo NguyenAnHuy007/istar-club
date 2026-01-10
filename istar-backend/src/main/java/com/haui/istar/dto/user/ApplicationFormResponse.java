@@ -1,20 +1,25 @@
 package com.haui.istar.dto.user;
 
-import jakarta.validation.constraints.Email;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDate;
 
-@Data
+import com.haui.istar.model.Department;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UpdateProfileRequest {
+public class ApplicationFormResponse {
+    private Long id;
 
-    @Email(message = "Email không hợp lệ")
+    private String fullName;
+    
     private String email;
 
     private String firstName;
@@ -23,10 +28,7 @@ public class UpdateProfileRequest {
 
     private LocalDate birthday;
 
-    private String address;
-
-    private String part;
-
     private String phoneNumber;
-}
 
+    private Department department;
+}
