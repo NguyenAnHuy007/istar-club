@@ -32,19 +32,36 @@ public class ApplicationController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/update/{email}")
-    public ResponseEntity<ApplicationFormResponse> updateApplication(
-            @PathVariable String email,
+    @PutMapping({"/update", "/update/{id}"})
+    public ResponseEntity<?> updateApplication(
+            @PathVariable(required = false) Long id,
             @RequestBody @Valid ApplicationFormRequest request) {
+        // Bắt lỗi nếu id null
+        if (id == null) {
+            return ResponseEntity.badRequest().body("Bạn chưa nhập ID!");
+        }
 
-        ApplicationFormResponse response = applicationFormService.updateByEmail(email, request);
-        return ResponseEntity.ok(response);
+        try {
+            ApplicationFormResponse response = applicationFormService.updateById(id, request);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(404).body(ex.getMessage());
+        }
     }
 
-    @DeleteMapping("/delete/{email}")
-    public ResponseEntity<String> deleteApplication(@PathVariable String email) {
-        applicationFormService.deleteByEmail(email);
-        return ResponseEntity.ok("Xóa đơn đăng ký thành công cho email: " + email);
+
+    @DeleteMapping({"/delete", "/delete/{id}"})
+    public ResponseEntity<?> deleteApplication(@PathVariable(required = false) Long id) {
+        if (id == null) {
+            return ResponseEntity.badRequest().body("Bạn chưa nhập ID!");
+        }
+
+        try {
+            applicationFormService.deleteById(id);
+            return ResponseEntity.ok("Xóa đơn đăng ký thành công với id: " + id);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(404).body(ex.getMessage());
+        }
     }
 
 }

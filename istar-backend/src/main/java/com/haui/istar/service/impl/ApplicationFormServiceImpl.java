@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ApplicationFormServiceImpl implements ApplicationFormService{
-    
+
     private final RegisterApplicationRepository repository;
 
     //Thêm
@@ -50,11 +50,9 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
                 .build();
     }
     //Sửa
-    public ApplicationFormResponse updateByEmail(String email, ApplicationFormRequest request) {
+    public ApplicationFormResponse updateById(Long id, ApplicationFormRequest request) {
 
-        RegisterApplicationForm entity = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký"));
-
+        RegisterApplicationForm entity = repository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký"));
         entity.setFirstName(request.getFirstName());
         entity.setLastName(request.getLastName());
         entity.setBirthday(request.getBirthday());
@@ -68,29 +66,24 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
 
         repository.save(entity);
 
-        if (request.getEmail() != null && !request.getEmail().equals(email)) {
-        throw new IllegalArgumentException("Email không được thay đổi");
-        }
         return ApplicationFormResponse.builder()
-        .id(entity.getId())
-        .fullName(entity.getFirstName() + " " + entity.getLastName())
-        .firstName(entity.getFirstName())
-        .lastName(entity.getLastName())
-        .email(entity.getEmail())
-        .birthday(entity.getBirthday())
-        .phoneNumber(entity.getPhoneNumber())
-        .department(entity.getDepartment())
-        .build();
+                .id(entity.getId())
+                .fullName(entity.getFirstName() + " " + entity.getLastName())
+                .firstName(entity.getFirstName())
+                .lastName(entity.getLastName())
+                .email(entity.getEmail())
+                .birthday(entity.getBirthday())
+                .phoneNumber(entity.getPhoneNumber())
+                .department(entity.getDepartment())
+                .build();
     }
 
     //Xóa
-    @Override
-public void deleteByEmail(String email) {
-    RegisterApplicationForm entity = repository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký với email: " + email));
+    public void deleteById(Long id) {
+        RegisterApplicationForm entity = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký với id: " + id));
 
-    repository.delete(entity);
-}
-
+        repository.delete(entity);
+    }
 
 }

@@ -5,6 +5,6 @@ import com.haui.istar.dto.user.ApplicationFormResponse;
 
 public interface ApplicationFormService {
     ApplicationFormResponse submitApplication(ApplicationFormRequest request);
-    ApplicationFormResponse updateByEmail(String email, ApplicationFormRequest request);
-    void deleteByEmail(String email);
+    ApplicationFormResponse updateById(Long id, ApplicationFormRequest request);
+    void deleteById(Long id);
 }
