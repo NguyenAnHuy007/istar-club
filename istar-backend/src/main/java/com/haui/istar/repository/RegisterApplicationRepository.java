@@ -9,8 +9,5 @@ import com.haui.istar.model.RegisterApplicationForm;
 
 public interface RegisterApplicationRepository extends JpaRepository<RegisterApplicationForm, Long>, JpaSpecificationExecutor<RegisterApplicationForm>{
     boolean existsByEmail(String email);
-    boolean existsByphoneNumber(String phoneNumber);
-    
-    Optional<RegisterApplicationForm> findByEmail(String email);
-
+    Optional<RegisterApplicationForm> findById(Long id);
 }

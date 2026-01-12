@@ -1,5 +1,6 @@
 package com.haui.istar.service.impl;
 
+import com.haui.istar.util.ExcelExporter;
 import org.springframework.stereotype.Service;
 
 import com.haui.istar.dto.user.ApplicationFormRequest;
@@ -11,12 +12,13 @@ import com.haui.istar.service.ApplicationFormService;
 import jakarta.persistence.EntityExistsException;
 import lombok.RequiredArgsConstructor;
 
+import java.io.ByteArrayInputStream;
+
 @Service
 @RequiredArgsConstructor
 public class ApplicationFormServiceImpl implements ApplicationFormService{
 
     private final RegisterApplicationRepository repository;
-
     //Thêm
     @Override
     public ApplicationFormResponse submitApplication(ApplicationFormRequest request) {
@@ -49,7 +51,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
                 .department(saved.getDepartment())
                 .build();
     }
-    //Sửa
+    //cập nhật
     public ApplicationFormResponse updateById(Long id, ApplicationFormRequest request) {
 
         RegisterApplicationForm entity = repository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký"));
@@ -85,5 +87,10 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
 
         repository.delete(entity);
     }
-
+    //Xuất excel
+    @Override
+    public ByteArrayInputStream exportExcel() {
+        var list = repository.findAll();
+        return ExcelExporter.applicationToExcel(list);
+    }
 }
