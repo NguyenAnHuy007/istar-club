@@ -32,7 +32,10 @@ public class RegisterApplicationForm {
 
     @Column(length = 255)
     private String address;
-    
+
+    @Column(length = 500)
+    private String avatarUrl;
+
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 

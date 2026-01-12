@@ -32,6 +32,8 @@ public class ApplicationFormRequest {
 
     private String address;
 
+    private String avatarUrl;
+
     @NotBlank(message = "Số điện thoại không được để trống")
     private String phoneNumber;
 
