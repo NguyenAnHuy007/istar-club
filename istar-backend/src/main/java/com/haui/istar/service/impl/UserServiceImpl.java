@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
         if (request.getLastName() != null) user.setLastName(request.getLastName());
         if (request.getBirthday() != null) user.setBirthday(request.getBirthday());
         if (request.getAddress() != null) user.setAddress(request.getAddress());
-        if (request.getPart() != null) user.setPart(request.getPart());
+        if (request.getDepartment() != null) user.setDepartment(request.getDepartment());
         if (request.getPhoneNumber() != null) user.setPhoneNumber(request.getPhoneNumber());
 
         User saved = userRepository.save(user);
@@ -81,7 +81,7 @@ public class UserServiceImpl implements UserService {
                 .lastName(user.getLastName())
                 .birthday(user.getBirthday())
                 .address(user.getAddress())
-                .part(user.getPart())
+                .part(user.getDepartment())
                 .phoneNumber(user.getPhoneNumber())
                 .isActive(user.getIsActive())
                 .isDeleted(user.getIsDeleted())

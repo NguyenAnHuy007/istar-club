@@ -41,7 +41,7 @@ public class User {
     private String address;
 
     @Column(length = 100)
-    private String part;
+    private String department;
 
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;

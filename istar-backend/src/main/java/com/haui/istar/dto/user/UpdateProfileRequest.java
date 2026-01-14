@@ -25,7 +25,7 @@ public class UpdateProfileRequest {
 
     private String address;
 
-    private String part;
+    private String department;
 
     private String phoneNumber;
 }

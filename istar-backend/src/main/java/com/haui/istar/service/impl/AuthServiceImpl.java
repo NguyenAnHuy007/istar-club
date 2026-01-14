@@ -55,7 +55,7 @@ public class AuthServiceImpl implements AuthService {
                 .lastName(request.getLastName())
                 .birthday(request.getBirthday())
                 .address(request.getAddress())
-                .part(request.getPart())
+                .department(request.getDepartment())
                 .roles(new ArrayList<>())
                 .build();
 
@@ -113,7 +113,7 @@ public class AuthServiceImpl implements AuthService {
                 .lastName(user.getLastName())
                 .birthday(user.getBirthday())
                 .address(user.getAddress())
-                .part(user.getPart())
+                .part(user.getDepartment())
                 .phoneNumber(user.getPhoneNumber())
                 .isActive(user.getIsActive())
                 .isDeleted(user.getIsDeleted())

@@ -37,7 +37,7 @@ public class RegisterRequest {
 
     private String address;
 
-    private String part;
+    private String department;
 
     private List<Integer> roles;
 }

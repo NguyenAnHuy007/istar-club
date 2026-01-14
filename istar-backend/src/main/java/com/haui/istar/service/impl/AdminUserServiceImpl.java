@@ -3,12 +3,19 @@ package com.haui.istar.service.impl;
 import com.haui.istar.dto.admin.UpdateUserRequest;
 import com.haui.istar.dto.common.UserDto;
 import com.haui.istar.dto.admin.UserSearchCriteria;
+import com.haui.istar.dto.user.ApplicationFormRequest;
+import com.haui.istar.dto.user.ApplicationFormResponse;
 import com.haui.istar.exception.BadRequestException;
+import com.haui.istar.model.RegisterApplicationForm;
 import com.haui.istar.model.User;
 import com.haui.istar.model.UserRole;
+import com.haui.istar.repository.RegisterApplicationRepository;
 import com.haui.istar.repository.UserRepository;
 import com.haui.istar.repository.UserSpecification;
 import com.haui.istar.service.AdminUserService;
+import com.haui.istar.service.ApplicationFormService;
+import com.haui.istar.util.ExcelExporter;
+import jakarta.persistence.EntityExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,15 +26,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class AdminUserServiceImpl implements AdminUserService {
+public class AdminUserServiceImpl implements AdminUserService, ApplicationFormService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RegisterApplicationRepository repository;
 
     @Override
     @Transactional(readOnly = true)
@@ -100,7 +109,7 @@ public class AdminUserServiceImpl implements AdminUserService {
             user.setAddress(request.getAddress());
         }
         if (request.getPart() != null) {
-            user.setPart(request.getPart());
+            user.setDepartment(request.getPart());
         }
         if (request.getPhoneNumber() != null) {
             user.setPhoneNumber(request.getPhoneNumber());
@@ -168,11 +177,86 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .lastName(user.getLastName())
                 .birthday(user.getBirthday())
                 .address(user.getAddress())
-                .part(user.getPart())
+                .part(user.getDepartment())
                 .phoneNumber(user.getPhoneNumber())
                 .isActive(user.getIsActive())
                 .isDeleted(user.getIsDeleted())
                 .roles(roles)
                 .build();
+    }
+
+    //Thêm
+    @Override
+    public ApplicationFormResponse submitApplication(ApplicationFormRequest request) {
+
+        // Check trùng email
+        if (repository.existsByEmail(request.getEmail())) {
+            throw new EntityExistsException("Email này đã ứng tuyển rồi!");
+        }
+
+        RegisterApplicationForm form = RegisterApplicationForm.builder()
+                .email(request.getEmail())
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .birthday(request.getBirthday())
+                .address(request.getAddress())
+                .phoneNumber(request.getPhoneNumber())
+                .department(request.getDepartment())
+                .reasonDepartment(request.getReasonDepartment())
+                .knowIStar(request.getKnowIStar())
+                .reasonIStarer(request.getReasonIStarer())
+                .build();
+
+        RegisterApplicationForm saved = repository.save(form);
+
+        return ApplicationFormResponse.builder()
+                .id(saved.getId())
+                .fullName(saved.getFirstName() + " " + saved.getLastName())
+                .email(saved.getEmail())
+                .phoneNumber(saved.getPhoneNumber())
+                .department(saved.getDepartment())
+                .build();
+    }
+    //cập nhật
+    public ApplicationFormResponse updateById(Long id, ApplicationFormRequest request) {
+
+        RegisterApplicationForm entity = repository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký"));
+        entity.setFirstName(request.getFirstName());
+        entity.setLastName(request.getLastName());
+        entity.setBirthday(request.getBirthday());
+        entity.setAddress(request.getAddress());
+        entity.setPhoneNumber(request.getPhoneNumber());
+        entity.setDepartment(request.getDepartment());
+        entity.setReasonDepartment(request.getReasonDepartment());
+        entity.setKnowIStar(request.getKnowIStar());
+        entity.setReasonIStarer(request.getReasonIStarer());
+        entity.setCvUrl(request.getCvUrl());
+
+        repository.save(entity);
+
+        return ApplicationFormResponse.builder()
+                .id(entity.getId())
+                .fullName(entity.getFirstName() + " " + entity.getLastName())
+                .firstName(entity.getFirstName())
+                .lastName(entity.getLastName())
+                .email(entity.getEmail())
+                .birthday(entity.getBirthday())
+                .phoneNumber(entity.getPhoneNumber())
+                .department(entity.getDepartment())
+                .build();
+    }
+
+    //Xóa
+    public void deleteById(Long id) {
+        RegisterApplicationForm entity = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký với id: " + id));
+
+        repository.delete(entity);
+    }
+    //Xuất excel
+    @Override
+    public ByteArrayInputStream exportExcel() {
+        var list = repository.findAll();
+        return ExcelExporter.applicationToExcel(list);
     }
 }
