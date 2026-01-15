@@ -1,120 +1,215 @@
-# iStar Backend — Tổng quan dự án
+# iStar Backend — Tổng quan dự án (Phiên bản cập nhật)
 
-Tệp này tóm tắt toàn bộ backend của dự án iStar, kèm các thay đổi gần đây (tái cấu trúc DTO, tách `UserService`, thống nhất lỗi, bảo mật endpoint).
+Tệp này mô tả ngắn gọn cấu trúc, các thành phần chính, các endpoint quan trọng và hướng dẫn build/run cho dự án iStar Backend tại thời điểm này.
 
 ---
 
 ## 1. Mục đích
-Dự án là backend cho hệ thống quản lý câu lạc bộ (iStar). Nó cung cấp:
-- Xác thực người dùng bằng JWT (đăng ký / đăng nhập)
-- Phân quyền theo vai trò (số role) để truy cập các module A/B/C/D
-- API quản trị (Admin) để quản lý user: xem, tìm kiếm phân trang, cập nhật, vô hiệu hóa, xóa mềm
-- API user để người dùng xem/cập nhật profile và đổi mật khẩu
+
+iStar Backend là dịch vụ REST API cho hệ thống quản lý câu lạc bộ iStar. Mục tiêu chính:
+- Cung cấp xác thực JWT (register / login) và phân quyền theo vai trò.
+- Cung cấp API user để quản lý thông tin cá nhân (profile, đổi mật khẩu).
+- Cung cấp API admin để quản trị users và xử lý các đơn ứng tuyển (applications).
+- Hỗ trợ xuất báo cáo (Excel) và các thao tác tìm kiếm phân trang.
 
 ## 2. Công nghệ chính
+
 - Java 17
 - Spring Boot (Web, Security, Data JPA)
 - Lombok
-- JJWT (io.jsonwebtoken)
-- PostgreSQL
+- Apache POI (Excel export)
+- JJWT (JWT)
+- PostgreSQL (hoặc bất kỳ RDBMS tương thích JPA)
+- Maven (maven wrapper `mvnw.cmd` có sẵn)
 
-## 3. Cấu trúc mã nguồn (đường dẫn chính)
-- `src/main/java/com/haui/istar/`
-  - `controller/`
-    - `auth/` — `AuthController.java` (register, login)
-    - `admin/` — `AdminUserController.java` (quản trị user)
-    - `user/` — `UserController.java` (user self-service: profile, change password)
-    - `Module*Controller.java` — các route mẫu theo role
-  - `service/` và `service/impl/`
-    - `AuthService` / `AuthServiceImpl` — đăng ký & đăng nhập
-    - `UserService` / `UserServiceImpl` — logic liên quan profile (get/update/change password)
-    - `AdminUserService` / `AdminUserServiceImpl` — logic quản trị user
-  - `model/` — JPA entities
-    - `User.java` — users (username, password, email, firstName, lastName, birthday, address, part, phoneNumber, isActive, isDeleted, roles)
-    - `UserRole.java` — user_roles (user_id, role)
-  - `repository/`
-    - `UserRepository.java` — extends `JpaRepository` + `JpaSpecificationExecutor` (tìm kiếm động)
-    - `UserSpecification.java` — builder cho Specification (search)
-  - `security/`
-    - `JwtTokenProvider.java`, `JwtAuthenticationFilter.java`, `CustomUserDetailsService.java`, `UserPrincipal.java`
-  - `dto/` (tái cấu trúc)
-    - `dto/common/` — `ApiResponse`, `UserDto` (chung)
-    - `dto/auth/` — `RegisterRequest`, `LoginRequest`, `LoginResponse`
-    - `dto/user/` — `UpdateProfileRequest`, `ChangePasswordRequest`
-    - `dto/admin/` — `UpdateUserRequest`, `UserSearchCriteria`
-  - `config/` — `SecurityConfig.java`, `GlobalExceptionHandler.java`
-  - `exception/` — `ResourceNotFoundException`, `BadRequestException`, `UnauthorizedException`
+---
 
-## 4. Những thay đổi quan trọng gần đây
-- Tái cấu trúc DTO: chia theo `common`, `auth`, `user`, `admin` để dễ quản lý.
-- Tách `UserService` (không đặt API profile trong `AuthService`):
-  - `UserService` chứa `getProfile`, `updateProfile`, `changePassword`.
-  - `AuthService` chỉ còn `register` và `login`.
-- `UserController`:
-  - Bảo vệ bằng `@PreAuthorize("isAuthenticated()")`.
-  - Sử dụng `@AuthenticationPrincipal UserPrincipal` để lấy user id thay vì extract thủ công.
-  - Endpoints:
-    - `GET /api/user/me` — lấy profile
-    - `PUT /api/user/me` — cập nhật profile (không được sửa username/password)
-    - `PUT /api/user/me/change-password` — đổi mật khẩu (cần oldPassword)
-- `AdminUserController`:
-  - Không cho phép admin cập nhật `username` qua endpoint `PUT /api/admin/users/{id}` (trả 400 nếu payload có `username`).
-- Lỗi & exception handling:
-  - Thêm custom exceptions: `ResourceNotFoundException`, `BadRequestException`, `UnauthorizedException`.
-  - `GlobalExceptionHandler` được cập nhật để trả `ApiResponse.error(...)` cho các exception này với HTTP status phù hợp.
-- Security & JWT:
-  - JWT payload vẫn chứa `sub` (userId), `username`, `roles`.
-  - `jwt.secret` khuyến nghị lưu ở biến môi trường / secret manager (hiện có giá trị tạm trong `application.properties` — KHÔNG commit giá trị thật vào repo).
+## 3. Cấu trúc mã nguồn chính
+
+Đường dẫn gốc: `src/main/java/com/haui/istar/`
+
+- `controller/` — REST controllers
+  - `auth/` — xác thực (AuthController)
+  - `admin/` — API dành cho admin (AdminUserController, AdminApplicationController)
+  - `user/` — API dành cho người dùng (UserController, ApplicationFormController)
+
+- `dto/` — Data Transfer Objects (đã tổ chức theo chức năng)
+  - `dto.application` — DTO liên quan "application" (application request/response/search/update)
+  - `dto.auth` — DTO cho auth (RegisterRequest, LoginRequest/Response)
+  - `dto.user` — DTO cho user (UpdateProfileRequest, ChangePasswordRequest)
+  - `dto.admin` — DTO admin (UpdateUserRequest, UserSearchCriteria)
+  - `dto.common` — DTO dùng chung (ApiResponse, UserDto, ...)
+
+- `service/` — Interfaces và `service/impl/` — implementations
+  - `AuthService` / `AuthServiceImpl` — đăng ký, đăng nhập
+  - `UserService` / `UserServiceImpl` — profile, change password
+  - `AdminUserService` / `AdminUserServiceImpl` — quản trị users
+  - `ApplicationFormService` / `ApplicationFormServiceImpl` — xử lý đơn ứng tuyển của user
+  - `AdminApplicationService` / `AdminApplicationServiceImpl` — logic admin cho applications (search, approve, reject)
+
+- `model/` — JPA entities
+  - `User.java` — thực thể người dùng (department enum, audit fields)
+  - `Application.java` — thực thể đơn ứng tuyển (status enum, audit fields)
+  - `UserRole.java` — mapping user-role
+  - `model/enums/` — chứa enum `Department`, `ApplicationStatus` (tách riêng)
+
+- `repository/` — Spring Data repositories
+  - `ApplicationRepository.java`, `UserRepository.java`, `UserRoleRepository.java`
+  - `repository/specification/` — chứa `UserSpecification`, `ApplicationSpecification` cho tìm kiếm động (Specification API)
+
+- `security/` — security components
+  - `JwtTokenProvider`, `JwtAuthenticationFilter`, `CustomUserDetailsService`, `UserPrincipal`
+
+- `config/` — cấu hình chung
+  - `SecurityConfig.java`, `GlobalExceptionHandler.java`
+
+- `util/` — helpers
+  - `ExcelExporter.java` — xuất danh sách đơn ra file Excel
+
+- `exception/` — custom exceptions
+  - `ResourceNotFoundException`, `BadRequestException`, `UnauthorizedException`
+
+---
+
+## 4. Những thay đổi, tối ưu đáng chú ý (gần đây)
+
+- Tái cấu trúc DTO theo chức năng (`dto.application`, `dto.auth`, `dto.user`, `dto.admin`, `dto.common`) để dễ quản lý.
+- Đổi `RegisterApplicationForm` thành `Application` (entity), kèm `ApplicationRepository`.
+- Thêm `AdminApplicationService` và `AdminApplicationController` để tách rõ logic admin cho applications.
+- Thống nhất đổi trường `part` → `department` và sử dụng enum `Department` (giá trị `MODERN_DANCE` sửa lỗi chính tả).
+- Thêm audit fields (`createdAt`, `updatedAt`) cho entities chính.
+- Thêm `ApplicationStatus` enum (PENDING/APPROVED/REJECTED) và logic approve/reject.
+- Tách các Specification vào `repository/specification/` để hỗ trợ tìm kiếm động và pagination.
+
+---
 
 ## 5. Các endpoint chính (tóm tắt)
-- Auth:
-  - `POST /api/auth/register` — đăng ký
-  - `POST /api/auth/login` — đăng nhập (trả JWT)
-- User (self-service):
-  - `GET /api/user/me` — xem profile (yêu cầu đăng nhập)
-  - `PUT /api/user/me` — cập nhật profile (không đổi username/password)
-  - `PUT /api/user/me/change-password` — đổi mật khẩu (yêu cầu oldPassword)
-- Admin (role = 0):
-  - `GET /api/admin/users` — danh sách phân trang
-  - `POST /api/admin/users/search` — tìm kiếm phân trang
-  - `GET /api/admin/users/{id}` — chi tiết
-  - `PUT /api/admin/users/{id}` — cập nhật (KHÔNG cho đổi username)
-  - `DELETE /api/admin/users/{id}` — xóa mềm
-  - `PUT /api/admin/users/{id}/deactivate` — vô hiệu hóa
-  - `PUT /api/admin/users/{id}/activate` — kích hoạt
 
-## 6. Cách build & chạy (local)
-Yêu cầu: Java 17, Maven wrapper.
+### Authentication (Public - không cần token)
+- POST `/api/auth/register` — đăng ký tài khoản mới
+- POST `/api/auth/login` — đăng nhập (trả JWT token)
 
-- Build:
+### User Profile (Authenticated - cần token)
+- GET `/api/users/me` — lấy thông tin profile của user hiện tại
+- PUT `/api/users/me` — cập nhật profile (không đổi username/password)
+- PUT `/api/users/me/change-password` — đổi mật khẩu (cần oldPassword)
+
+### Applications - Đơn ứng tuyển (Authenticated - cần token)
+- POST `/api/applications` — nộp đơn ứng tuyển mới
+- PUT `/api/applications/{id}` — cập nhật đơn của user
+- DELETE `/api/applications/{id}` — xóa đơn của user
+
+### Admin - Quản lý Users (Cần role ADMIN hoặc ROLE_0)
+- GET `/api/admin/users` — danh sách người dùng (pagination)
+- POST `/api/admin/users/search` — tìm kiếm người dùng với filter (Specification + pagination)
+- GET `/api/admin/users/{id}` — xem chi tiết user
+- PUT `/api/admin/users/{id}` — cập nhật thông tin user (không cho đổi username)
+- DELETE `/api/admin/users/{id}` — xóa mềm user
+- PUT `/api/admin/users/{id}/deactivate` — vô hiệu hóa tài khoản
+- PUT `/api/admin/users/{id}/activate` — kích hoạt lại tài khoản
+
+### Admin - Quản lý Applications (Cần role ADMIN hoặc ROLE_0)
+- POST `/api/admin/applications/search` — tìm kiếm đơn ứng tuyển (pagination + filter)
+- GET `/api/admin/applications/{id}` — xem chi tiết đơn
+- PUT `/api/admin/applications/{id}` — admin cập nhật đơn
+- DELETE `/api/admin/applications/{id}` — xóa đơn
+- PUT `/api/admin/applications/{id}/approve` — duyệt đơn (status → APPROVED)
+- PUT `/api/admin/applications/{id}/reject` — từ chối đơn (status → REJECTED)
+- GET `/api/admin/applications/export-excel` — xuất tất cả đơn ra file Excel
+
+---
+
+## 6. Cấu hình Security
+
+SecurityConfig đã được tối ưu với logic rõ ràng theo từng nhóm endpoint:
+
+```java
+// Public - không cần authentication
+/api/auth/**                    → permitAll()
+/api/public/**                  → permitAll()
+
+// Admin - cần role ADMIN hoặc ROLE_0
+/api/admin/**                   → hasAnyRole("0", "ADMIN")
+
+// User authenticated endpoints
+/api/users/me/**                → authenticated()
+/api/applications/**            → authenticated()
+
+// Module endpoints theo role cụ thể
+/api/module-a/**                → hasRole("1")
+/api/module-b/**                → hasRole("2")
+/api/module-c/**                → hasRole("3")
+/api/module-d/**                → hasRole("4")
+
+// Default
+anyRequest()                    → authenticated()
+```
+
+**Lưu ý:** 
+- Thứ tự requestMatchers từ cụ thể đến chung để tránh conflict
+- Controllers có thể thêm `@PreAuthorize` để double-check permission
+- JWT token cần có trong header: `Authorization: Bearer <token>`
+
+---
+
+## 7. Cách build & chạy (local)
+
+Yêu cầu môi trường: Java 17, Maven (wrapper có sẵn)
+
+- Build (skip tests):
 
 ```powershell
 cd D:\Study\Project\iStar\istar-club\istar-backend
-.\mvnw.cmd -DskipTests package
+.\mvnw.cmd clean package -DskipTests
 ```
 
-- Chạy:
+- Run:
 
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-## 7. Kiểm tra & testing nhanh
-- Build đã kiểm tra: `mvnw.cmd clean compile -DskipTests` — BUILD SUCCESS trong môi trường hiện tại.
-- Test flow:
-  1. Tạo / đăng nhập user (AuthController) để lấy JWT.
-  2. Gọi `GET /api/user/me` với header `Authorization: Bearer <token>`.
-  3. Gọi `PUT /api/user/me` (payload không có `username` nor `password`).
-  4. Gọi `PUT /api/user/me/change-password` với `{ oldPassword, newPassword }`.
-  5. Admin: thử `PUT /api/admin/users/{id}` có trường `username` → sẽ bị từ chối (400).
+- Kiểm tra compile nhanh:
 
-## 8. Gợi ý cải tiến tiếp theo
-- Thêm unit/integration tests cho `UserController` và `AdminUserController` (MockMvc).
-- Thêm trường audit (`createdAt`, `updatedAt`, `deletedAt`) cho `User`.
-- Cân nhắc sử dụng RSA keys (RS256) cho JWT; dùng public key để verify ở các service khác.
-- Thêm Swagger/OpenAPI để document API.
-- Triển khai secret management (Vault, AWS Secrets Manager, Azure Key Vault).
+```powershell
+.\mvnw.cmd clean compile -DskipTests
+```
 
 ---
 
-Nếu bạn muốn, tôi có thể cập nhật `README.md` chính, tạo Postman collection, hoặc viết vài unit tests mẫu. Bạn muốn tôi làm gì tiếp theo?
+## 8. Database & migration notes
+
+- Nếu đang migrate từ schema cũ, cần:
+  - Đổi tên cột `part` → `department` trong `users` (SQL) và map sang giá trị enum.
+  - Đổi tên bảng `application_forms` → `applications` nếu cần.
+  - Thêm cột audit `created_at`, `updated_at` cho các bảng.
+  - Cập nhật dữ liệu enum `MORDEN_DANCE` → `MODERN_DANCE` nếu có.
+
+Khuyến nghị: tạo migration script dùng Flyway hoặc Liquibase để an toàn.
+
+---
+
+## 9. Testing & quality gates
+
+- Tích hợp unit tests và integration tests cho các service quan trọng (Auth, User, AdminUser, AdminApplication).
+- Kiểm tra các quality gates trước khi deploy: build, lint, unit tests, integration tests.
+- Nên thêm tests cho `ApplicationSpecification` và `AdminApplicationService`.
+
+---
+
+## 10. Tài liệu & next steps đề xuất
+
+1. Thêm Swagger/OpenAPI để auto-generate tài liệu API.
+2. Thêm Postman collection export cho QA.
+3. Viết unit tests mẫu (MockMvc) cho `UserController` và `AdminApplicationController`.
+4. Triển khai secret manager cho `jwt.secret`.
+5. Xem xét dùng RS256 (asymmetric) cho JWT nếu cần xác thực bên ngoài.
+
+---
+
+Nếu bạn muốn, tôi sẽ:
+- Cập nhật file `README.md` dựa trên nội dung này;
+- Tạo Postman collection mẫu;
+- Viết 3 unit tests mẫu cho `ApplicationFormService` và `AdminApplicationService`.
+
+Bạn muốn tôi làm việc nào tiếp theo?
