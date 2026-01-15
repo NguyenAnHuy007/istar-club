@@ -1,5 +1,6 @@
-package com.haui.istar.dto.admin;
+package com.haui.istar.dto.user;
 
+import com.haui.istar.model.enums.Department;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -29,7 +30,7 @@ public class UpdateUserRequest {
     private String lastName;
     private LocalDate birthday;
     private String address;
-    private String part;
+    private Department department;
     private String phoneNumber;
     private Boolean isActive;
     private Boolean isDeleted;

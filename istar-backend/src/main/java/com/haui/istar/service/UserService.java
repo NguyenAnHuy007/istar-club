@@ -1,6 +1,6 @@
 package com.haui.istar.service;
 
-import com.haui.istar.dto.common.UserDto;
+import com.haui.istar.dto.user.UserDto;
 
 public interface UserService {
     UserDto getProfile(Long userId);

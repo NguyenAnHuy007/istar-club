@@ -4,7 +4,7 @@ import com.haui.istar.dto.auth.LoginRequest;
 import com.haui.istar.dto.auth.LoginResponse;
 import com.haui.istar.dto.auth.RegisterRequest;
 import com.haui.istar.dto.common.ApiResponse;
-import com.haui.istar.dto.common.UserDto;
+import com.haui.istar.dto.user.UserDto;
 import com.haui.istar.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

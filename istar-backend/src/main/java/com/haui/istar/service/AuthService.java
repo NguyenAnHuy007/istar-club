@@ -3,7 +3,7 @@ package com.haui.istar.service;
 import com.haui.istar.dto.auth.LoginRequest;
 import com.haui.istar.dto.auth.LoginResponse;
 import com.haui.istar.dto.auth.RegisterRequest;
-import com.haui.istar.dto.common.UserDto;
+import com.haui.istar.dto.user.UserDto;
 
 public interface AuthService {
 

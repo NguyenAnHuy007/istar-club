@@ -1,9 +1,11 @@
 package com.haui.istar.model;
 
+import com.haui.istar.model.enums.Department;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,8 +42,9 @@ public class User {
     @Column(length = 255)
     private String address;
 
-    @Column(length = 100)
-    private String part;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50)
+    private Department department;
 
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
@@ -53,6 +56,22 @@ public class User {
     @Column(name = "is_deleted", nullable = false)
     @Builder.Default
     private Boolean isDeleted = false;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default

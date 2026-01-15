@@ -1,4 +1,4 @@
-package com.haui.istar.model;
+package com.haui.istar.model.enums;
 
 public enum Department {
     SING,
@@ -6,5 +6,5 @@ public enum Department {
     RAP,
     DANCE,
     EVENT,
-    MORDEN_DANCE
+    MODERN_DANCE
 }

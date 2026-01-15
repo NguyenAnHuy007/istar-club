@@ -1,5 +1,7 @@
 package com.haui.istar.model;
 
+import com.haui.istar.model.enums.ApplicationStatus;
+import com.haui.istar.model.enums.Department;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -7,14 +9,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "application_forms")
+@Table(name = "applications")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 
-public class RegisterApplicationForm {
+public class Application {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -48,8 +50,16 @@ public class RegisterApplicationForm {
 
     @Column(nullable = false, length = 1000)
     private String reasonIStarer;
-    @Column(updatable = false)
 
+    @Column(length = 500)
+    private String cvUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private ApplicationStatus status = ApplicationStatus.PENDING;
+
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
@@ -63,7 +73,4 @@ public class RegisterApplicationForm {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-
-    @Column(length = 500)
-    private String cvUrl;
 }

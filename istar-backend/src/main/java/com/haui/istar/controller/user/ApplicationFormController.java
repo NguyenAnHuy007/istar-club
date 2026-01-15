@@ -2,18 +2,18 @@ package com.haui.istar.controller.user;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.haui.istar.dto.user.ApplicationFormRequest;
-import com.haui.istar.dto.user.ApplicationFormResponse;
+import com.haui.istar.dto.application.ApplicationFormRequest;
+import com.haui.istar.dto.application.ApplicationFormResponse;
 import com.haui.istar.service.ApplicationFormService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/application-form")
+@RequestMapping("/api/user/applications")
 @RequiredArgsConstructor
 
-public class ApplicationController {
+public class ApplicationFormController {
 
     private final ApplicationFormService applicationFormService;
 
@@ -49,12 +49,8 @@ public class ApplicationController {
             return ResponseEntity.badRequest().body("Bạn chưa nhập ID!");
         }
 
-        try {
-            applicationFormService.deleteById(id);
-            return ResponseEntity.ok("Xóa đơn đăng ký thành công với id: " + id);
-        } catch (RuntimeException ex) {
-            return ResponseEntity.status(404).body(ex.getMessage());
-        }
+        applicationFormService.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 
 }

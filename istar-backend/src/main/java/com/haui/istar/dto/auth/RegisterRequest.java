@@ -1,5 +1,6 @@
 package com.haui.istar.dto.auth;
 
+import com.haui.istar.model.enums.Department;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -37,7 +38,7 @@ public class RegisterRequest {
 
     private String address;
 
-    private String part;
+    private Department department;
 
     private List<Integer> roles;
 }

@@ -1,6 +1,6 @@
 package com.haui.istar.util;
 
-import com.haui.istar.model.RegisterApplicationForm;
+import com.haui.istar.model.Application;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -10,7 +10,7 @@ import java.util.List;
 
 public class ExcelExporter {
 
-    public static ByteArrayInputStream applicationToExcel(List<RegisterApplicationForm> list) {
+    public static ByteArrayInputStream applicationToExcel(List<Application> list) {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             Sheet sheet = workbook.createSheet("Applications");
@@ -39,7 +39,7 @@ public class ExcelExporter {
 
             int rowIdx = 1;
 
-            for (RegisterApplicationForm app : list) {
+            for (Application app : list) {
                 Row row = sheet.createRow(rowIdx++);
 
                 row.createCell(0).setCellValue(app.getId());

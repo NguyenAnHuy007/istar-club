@@ -3,7 +3,7 @@ package com.haui.istar.controller.user;
 import com.haui.istar.dto.common.ApiResponse;
 import com.haui.istar.dto.user.ChangePasswordRequest;
 import com.haui.istar.dto.user.UpdateProfileRequest;
-import com.haui.istar.dto.common.UserDto;
+import com.haui.istar.dto.user.UserDto;
 import com.haui.istar.security.UserPrincipal;
 import com.haui.istar.service.UserService;
 import jakarta.validation.Valid;
