@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Getter
@@ -37,7 +38,7 @@ public class UserPrincipal implements UserDetails {
 
     public List<Integer> getRoleNumbers() {
         return authorities.stream()
-                .map(auth -> Integer.parseInt(auth.getAuthority().replace("ROLE_", "")))
+                .map(auth -> Integer.parseInt(Objects.requireNonNull(auth.getAuthority()).replace("ROLE_", "")))
                 .collect(Collectors.toList());
     }
 
