@@ -1,13 +1,13 @@
 package com.haui.istar.service.impl;
 
-import com.haui.istar.dto.admin.UpdateUserRequest;
-import com.haui.istar.dto.common.UserDto;
-import com.haui.istar.dto.admin.UserSearchCriteria;
+import com.haui.istar.dto.user.UpdateUserRequest;
+import com.haui.istar.dto.user.UserDto;
+import com.haui.istar.dto.user.UserSearchCriteria;
 import com.haui.istar.exception.BadRequestException;
 import com.haui.istar.model.User;
 import com.haui.istar.model.UserRole;
 import com.haui.istar.repository.UserRepository;
-import com.haui.istar.repository.UserSpecification;
+import com.haui.istar.repository.specification.UserSpecification;
 import com.haui.istar.service.AdminUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -99,8 +99,8 @@ public class AdminUserServiceImpl implements AdminUserService {
         if (request.getAddress() != null) {
             user.setAddress(request.getAddress());
         }
-        if (request.getPart() != null) {
-            user.setPart(request.getPart());
+        if (request.getDepartment() != null) {
+            user.setDepartment(request.getDepartment());
         }
         if (request.getPhoneNumber() != null) {
             user.setPhoneNumber(request.getPhoneNumber());
@@ -168,7 +168,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .lastName(user.getLastName())
                 .birthday(user.getBirthday())
                 .address(user.getAddress())
-                .part(user.getPart())
+                .department(user.getDepartment())
                 .phoneNumber(user.getPhoneNumber())
                 .isActive(user.getIsActive())
                 .isDeleted(user.getIsDeleted())

@@ -1,8 +1,8 @@
 package com.haui.istar.service;
 
-import com.haui.istar.dto.admin.UpdateUserRequest;
-import com.haui.istar.dto.common.UserDto;
-import com.haui.istar.dto.admin.UserSearchCriteria;
+import com.haui.istar.dto.user.UpdateUserRequest;
+import com.haui.istar.dto.user.UserDto;
+import com.haui.istar.dto.user.UserSearchCriteria;
 import org.springframework.data.domain.Page;
 
 public interface AdminUserService {

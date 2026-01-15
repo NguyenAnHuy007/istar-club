@@ -1,8 +1,8 @@
-package com.haui.istar.dto.user;
+package com.haui.istar.dto.application;
 
 import java.time.LocalDate;
 
-import com.haui.istar.model.Department;
+import com.haui.istar.model.enums.Department;
 
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;

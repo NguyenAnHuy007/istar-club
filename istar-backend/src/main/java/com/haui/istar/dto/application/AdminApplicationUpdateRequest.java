@@ -1,5 +1,6 @@
-package com.haui.istar.dto.user;
+package com.haui.istar.dto.application;
 
+import com.haui.istar.model.enums.ApplicationStatus;
 import com.haui.istar.model.enums.Department;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
@@ -13,21 +14,20 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UpdateProfileRequest {
+public class AdminApplicationUpdateRequest {
 
     @Email(message = "Email không hợp lệ")
     private String email;
 
     private String firstName;
-
     private String lastName;
-
     private LocalDate birthday;
-
     private String address;
-
-    private Department department;
-
     private String phoneNumber;
+    private Department department;
+    private String reasonDepartment;
+    private String knowIStar;
+    private String reasonIStarer;
+    private String cvUrl;
+    private ApplicationStatus status;
 }
-

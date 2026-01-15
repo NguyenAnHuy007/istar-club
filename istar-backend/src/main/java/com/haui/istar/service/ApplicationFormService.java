@@ -1,7 +1,7 @@
 package com.haui.istar.service;
 
-import com.haui.istar.dto.user.ApplicationFormRequest;
-import com.haui.istar.dto.user.ApplicationFormResponse;
+import com.haui.istar.dto.application.ApplicationFormRequest;
+import com.haui.istar.dto.application.ApplicationFormResponse;
 
 import java.io.ByteArrayInputStream;
 

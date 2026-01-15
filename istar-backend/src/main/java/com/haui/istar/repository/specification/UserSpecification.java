@@ -1,6 +1,6 @@
-package com.haui.istar.repository;
+package com.haui.istar.repository.specification;
 
-import com.haui.istar.dto.admin.UserSearchCriteria;
+import com.haui.istar.dto.user.UserSearchCriteria;
 import com.haui.istar.model.User;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
@@ -65,3 +65,4 @@ public class UserSpecification {
         };
     }
 }
+

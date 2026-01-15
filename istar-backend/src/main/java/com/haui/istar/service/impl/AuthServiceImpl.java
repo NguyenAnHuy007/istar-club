@@ -3,7 +3,7 @@ package com.haui.istar.service.impl;
 import com.haui.istar.dto.auth.LoginRequest;
 import com.haui.istar.dto.auth.LoginResponse;
 import com.haui.istar.dto.auth.RegisterRequest;
-import com.haui.istar.dto.common.UserDto;
+import com.haui.istar.dto.user.UserDto;
 import com.haui.istar.exception.BadRequestException;
 import com.haui.istar.model.User;
 import com.haui.istar.model.UserRole;
@@ -55,7 +55,7 @@ public class AuthServiceImpl implements AuthService {
                 .lastName(request.getLastName())
                 .birthday(request.getBirthday())
                 .address(request.getAddress())
-                .part(request.getPart())
+                .department(request.getDepartment())
                 .roles(new ArrayList<>())
                 .build();
 
@@ -113,7 +113,7 @@ public class AuthServiceImpl implements AuthService {
                 .lastName(user.getLastName())
                 .birthday(user.getBirthday())
                 .address(user.getAddress())
-                .part(user.getPart())
+                .department(user.getDepartment())
                 .phoneNumber(user.getPhoneNumber())
                 .isActive(user.getIsActive())
                 .isDeleted(user.getIsDeleted())

@@ -1,5 +1,6 @@
-package com.haui.istar.dto.common;
+package com.haui.istar.dto.user;
 
+import com.haui.istar.model.enums.Department;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +22,7 @@ public class UserDto {
     private String lastName;
     private LocalDate birthday;
     private String address;
-    private String part;
+    private Department department;
     private String phoneNumber;
     private Boolean isActive;
     private Boolean isDeleted;

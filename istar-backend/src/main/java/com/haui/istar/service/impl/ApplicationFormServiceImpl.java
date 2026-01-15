@@ -3,10 +3,10 @@ package com.haui.istar.service.impl;
 import com.haui.istar.util.ExcelExporter;
 import org.springframework.stereotype.Service;
 
-import com.haui.istar.dto.user.ApplicationFormRequest;
-import com.haui.istar.dto.user.ApplicationFormResponse;
-import com.haui.istar.model.RegisterApplicationForm;
-import com.haui.istar.repository.RegisterApplicationRepository;
+import com.haui.istar.dto.application.ApplicationFormRequest;
+import com.haui.istar.dto.application.ApplicationFormResponse;
+import com.haui.istar.model.Application;
+import com.haui.istar.repository.ApplicationRepository;
 import com.haui.istar.service.ApplicationFormService;
 
 import jakarta.persistence.EntityExistsException;
@@ -18,7 +18,7 @@ import java.io.ByteArrayInputStream;
 @RequiredArgsConstructor
 public class ApplicationFormServiceImpl implements ApplicationFormService{
 
-    private final RegisterApplicationRepository repository;
+    private final ApplicationRepository repository;
     //Thêm
     @Override
     public ApplicationFormResponse submitApplication(ApplicationFormRequest request) {
@@ -28,7 +28,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
             throw new EntityExistsException("Email này đã ứng tuyển rồi!");
         }
 
-        RegisterApplicationForm form = RegisterApplicationForm.builder()
+        Application form = Application.builder()
                 .email(request.getEmail())
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
@@ -41,7 +41,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
                 .reasonIStarer(request.getReasonIStarer())
                 .build();
 
-        RegisterApplicationForm saved = repository.save(form);
+        Application saved = repository.save(form);
 
         return ApplicationFormResponse.builder()
                 .id(saved.getId())
@@ -54,7 +54,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
     //cập nhật
     public ApplicationFormResponse updateById(Long id, ApplicationFormRequest request) {
 
-        RegisterApplicationForm entity = repository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký"));
+        Application entity = repository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký"));
         entity.setFirstName(request.getFirstName());
         entity.setLastName(request.getLastName());
         entity.setBirthday(request.getBirthday());
@@ -82,7 +82,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
 
     //Xóa
     public void deleteById(Long id) {
-        RegisterApplicationForm entity = repository.findById(id)
+        Application entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký với id: " + id));
 
         repository.delete(entity);

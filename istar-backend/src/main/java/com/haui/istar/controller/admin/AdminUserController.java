@@ -1,9 +1,9 @@
 package com.haui.istar.controller.admin;
 
 import com.haui.istar.dto.common.ApiResponse;
-import com.haui.istar.dto.admin.UpdateUserRequest;
-import com.haui.istar.dto.common.UserDto;
-import com.haui.istar.dto.admin.UserSearchCriteria;
+import com.haui.istar.dto.user.UpdateUserRequest;
+import com.haui.istar.dto.user.UserDto;
+import com.haui.istar.dto.user.UserSearchCriteria;
 import com.haui.istar.service.AdminUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

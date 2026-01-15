@@ -1,4 +1,4 @@
-package com.haui.istar.dto.admin;
+package com.haui.istar.dto.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
