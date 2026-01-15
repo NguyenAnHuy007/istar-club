@@ -29,19 +29,17 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
-                        .requestMatchers("/api/application-form/**").permitAll()
-                        .requestMatchers("/api/**").hasRole("0")
-                        .requestMatchers("/api/module-a/**").hasRole("1")
-                        .requestMatchers("/api/module-b/**").hasRole("2")
-                        .requestMatchers("/api/module-c/**").hasRole("3")
-                        .requestMatchers("/api/module-d/**").hasRole("4")
+                        .requestMatchers("/api/admin/**").hasAnyRole("0", "ADMIN")
+                        .requestMatchers("/api/users/me/**").authenticated()
+                        .requestMatchers("/api/users/me").authenticated()
+                        .requestMatchers("/api/applications/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

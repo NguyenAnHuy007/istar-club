@@ -10,14 +10,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/user/applications")
+@RequestMapping("/api/applications")
 @RequiredArgsConstructor
 
 public class ApplicationFormController {
 
     private final ApplicationFormService applicationFormService;
 
-    @PostMapping("/register")
+    @PostMapping("")
     public ResponseEntity<ApplicationFormResponse> submitApplication(
             @RequestBody @Valid ApplicationFormRequest request) {
 
@@ -25,14 +25,10 @@ public class ApplicationFormController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping({"/update", "/update/{id}"})
+    @PutMapping("/{id}")
     public ResponseEntity<?> updateApplication(
-            @PathVariable(required = false) Long id,
+            @PathVariable Long id,
             @RequestBody @Valid ApplicationFormRequest request) {
-        // Bắt lỗi nếu id null
-        if (id == null) {
-            return ResponseEntity.badRequest().body("Bạn chưa nhập ID!");
-        }
 
         try {
             ApplicationFormResponse response = applicationFormService.updateById(id, request);
@@ -43,12 +39,8 @@ public class ApplicationFormController {
     }
 
 
-    @DeleteMapping({"/delete", "/delete/{id}"})
-    public ResponseEntity<?> deleteApplication(@PathVariable(required = false) Long id) {
-        if (id == null) {
-            return ResponseEntity.badRequest().body("Bạn chưa nhập ID!");
-        }
-
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteApplication(@PathVariable Long id) {
         applicationFormService.deleteById(id);
         return ResponseEntity.ok().build();
     }
