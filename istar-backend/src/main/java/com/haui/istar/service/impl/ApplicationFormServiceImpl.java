@@ -14,6 +14,10 @@ import lombok.RequiredArgsConstructor;
 
 import java.io.ByteArrayInputStream;
 
+import com.haui.istar.exception.BadRequestException;
+import com.haui.istar.model.enums.Department;
+import com.haui.istar.model.enums.SubDepartment;
+
 @Service
 @RequiredArgsConstructor
 public class ApplicationFormServiceImpl implements ApplicationFormService{
@@ -22,6 +26,18 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
     //Thêm
     @Override
     public ApplicationFormResponse submitApplication(ApplicationFormRequest request) {
+
+        // Validate subDepartment logic
+        if (request.getDepartment() == Department.MUSIC) {
+            if (request.getSubDepartment() == null || request.getSubDepartment() == SubDepartment.NONE) {
+                throw new BadRequestException("Thành viên Ban Âm nhạc phải chọn ban con (Hát/Rap/Nhạc cụ)");
+            }
+        } else {
+             // For other departments, force NONE if not already
+             if (request.getSubDepartment() != null && request.getSubDepartment() != SubDepartment.NONE) {
+                 request.setSubDepartment(SubDepartment.NONE);
+             }
+        }
 
         // Check trùng email
         if (repository.existsByEmail(request.getEmail())) {
@@ -36,6 +52,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
                 .address(request.getAddress())
                 .phoneNumber(request.getPhoneNumber())
                 .department(request.getDepartment())
+                .subDepartment(request.getSubDepartment())
                 .reasonDepartment(request.getReasonDepartment())
                 .knowIStar(request.getKnowIStar())
                 .reasonIStarer(request.getReasonIStarer())
@@ -49,18 +66,32 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
                 .email(saved.getEmail())
                 .phoneNumber(saved.getPhoneNumber())
                 .department(saved.getDepartment())
+                .subDepartment(saved.getSubDepartment())
                 .build();
     }
     //cập nhật
     public ApplicationFormResponse updateById(Long id, ApplicationFormRequest request) {
 
         Application entity = repository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký"));
+
+        // Validate subDepartment logic
+        if (request.getDepartment() == Department.MUSIC) {
+            if (request.getSubDepartment() == null || request.getSubDepartment() == SubDepartment.NONE) {
+                throw new BadRequestException("Thành viên Ban Âm nhạc phải chọn ban con (Hát/Rap/Nhạc cụ)");
+            }
+        } else {
+             if (request.getSubDepartment() != null && request.getSubDepartment() != SubDepartment.NONE) {
+                 request.setSubDepartment(SubDepartment.NONE);
+             }
+        }
+
         entity.setFirstName(request.getFirstName());
         entity.setLastName(request.getLastName());
         entity.setBirthday(request.getBirthday());
         entity.setAddress(request.getAddress());
         entity.setPhoneNumber(request.getPhoneNumber());
         entity.setDepartment(request.getDepartment());
+        entity.setSubDepartment(request.getSubDepartment());
         entity.setReasonDepartment(request.getReasonDepartment());
         entity.setKnowIStar(request.getKnowIStar());
         entity.setReasonIStarer(request.getReasonIStarer());
@@ -77,6 +108,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
                 .birthday(entity.getBirthday())
                 .phoneNumber(entity.getPhoneNumber())
                 .department(entity.getDepartment())
+                .subDepartment(entity.getSubDepartment())
                 .build();
     }
 

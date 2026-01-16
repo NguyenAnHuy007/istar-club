@@ -50,6 +50,10 @@ public class ApplicationSpecification {
                 predicates.add(cb.equal(root.get("department"), criteria.getDepartment()));
             }
 
+            if (criteria.getSubDepartment() != null) {
+                predicates.add(cb.equal(root.get("subDepartment"), criteria.getSubDepartment()));
+            }
+
             if (criteria.getStatus() != null) {
                 predicates.add(cb.equal(root.get("status"), criteria.getStatus()));
             }

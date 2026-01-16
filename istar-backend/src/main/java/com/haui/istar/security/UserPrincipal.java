@@ -1,6 +1,7 @@
 package com.haui.istar.security;
 
 import com.haui.istar.model.User;
+import com.haui.istar.model.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
@@ -8,9 +9,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.Collections;
 
 @Getter
 @AllArgsConstructor
@@ -20,26 +19,37 @@ public class UserPrincipal implements UserDetails {
     private String username;
     private String email;
     private String password;
+    private Role role;
     private Collection<? extends GrantedAuthority> authorities;
 
     public static UserPrincipal create(User user) {
-        List<GrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRole()))
-                .collect(Collectors.toList());
+        Collection<GrantedAuthority> authorities = Collections.singletonList(
+                new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
+        );
 
         return new UserPrincipal(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getPassword(),
+                user.getRole(),
                 authorities
         );
     }
 
-    public List<Integer> getRoleNumbers() {
-        return authorities.stream()
-                .map(auth -> Integer.parseInt(Objects.requireNonNull(auth.getAuthority()).replace("ROLE_", "")))
-                .collect(Collectors.toList());
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return authorities;
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    @Override
+    public String getUsername() {
+        return username;
     }
 
     @Override
@@ -62,3 +72,5 @@ public class UserPrincipal implements UserDetails {
         return true;
     }
 }
+
+

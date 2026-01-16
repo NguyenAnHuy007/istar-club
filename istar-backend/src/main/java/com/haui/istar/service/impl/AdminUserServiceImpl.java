@@ -4,11 +4,13 @@ import com.haui.istar.dto.user.UpdateUserRequest;
 import com.haui.istar.dto.user.UserDto;
 import com.haui.istar.dto.user.UserSearchCriteria;
 import com.haui.istar.exception.BadRequestException;
+import com.haui.istar.model.Generation;
 import com.haui.istar.model.User;
-import com.haui.istar.model.UserRole;
+import com.haui.istar.repository.GenerationRepository;
 import com.haui.istar.repository.UserRepository;
 import com.haui.istar.repository.specification.UserSpecification;
 import com.haui.istar.service.AdminUserService;
+import com.haui.istar.util.UserValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,15 +21,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 public class AdminUserServiceImpl implements AdminUserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserValidator userValidator;
+    private final GenerationRepository generationRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -86,7 +87,7 @@ public class AdminUserServiceImpl implements AdminUserService {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
 
-        // Cập nhật các trường khác
+        // Cập nhật thông tin cơ bản
         if (request.getFirstName() != null) {
             user.setFirstName(request.getFirstName());
         }
@@ -99,12 +100,21 @@ public class AdminUserServiceImpl implements AdminUserService {
         if (request.getAddress() != null) {
             user.setAddress(request.getAddress());
         }
-        if (request.getDepartment() != null) {
-            user.setDepartment(request.getDepartment());
-        }
         if (request.getPhoneNumber() != null) {
             user.setPhoneNumber(request.getPhoneNumber());
         }
+
+        // Cập nhật department trước subDepartment (quan trọng cho validation)
+        if (request.getDepartment() != null) {
+            user.setDepartment(request.getDepartment());
+        }
+
+        // Cập nhật subDepartment
+        if (request.getSubDepartment() != null) {
+            user.setSubDepartment(request.getSubDepartment());
+        }
+
+        // Cập nhật status
         if (request.getIsActive() != null) {
             user.setIsActive(request.getIsActive());
         }
@@ -112,17 +122,29 @@ public class AdminUserServiceImpl implements AdminUserService {
             user.setIsDeleted(request.getIsDeleted());
         }
 
-        // Cập nhật roles nếu có
-        if (request.getRoles() != null) {
-            user.getRoles().clear();
-            for (Integer roleNum : request.getRoles()) {
-                UserRole userRole = UserRole.builder()
-                        .user(user)
-                        .role(roleNum)
-                        .build();
-                user.getRoles().add(userRole);
-            }
+        // Cập nhật quyền và chức vụ
+        if (request.getRole() != null) {
+            user.setRole(request.getRole());
         }
+
+        if (request.getPosition() != null) {
+            user.setPosition(request.getPosition());
+        }
+
+        // Cập nhật khu vực
+        if (request.getArea() != null) {
+            user.setArea(request.getArea());
+        }
+
+        // Cập nhật generation
+        if (request.getGenerationId() != null) {
+            Generation generation = generationRepository.findById(request.getGenerationId())
+                    .orElseThrow(() -> new BadRequestException("Không tìm thấy gen với id: " + request.getGenerationId()));
+            user.setGeneration(generation);
+        }
+
+        // Validate business rules SAU KHI cập nhật tất cả fields
+        userValidator.validateUser(user, id);
 
         User savedUser = userRepository.save(user);
         return mapToUserDto(savedUser);
@@ -156,10 +178,6 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     private UserDto mapToUserDto(User user) {
-        List<Integer> roles = user.getRoles().stream()
-                .map(UserRole::getRole)
-                .collect(Collectors.toList());
-
         return UserDto.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -169,10 +187,15 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .birthday(user.getBirthday())
                 .address(user.getAddress())
                 .department(user.getDepartment())
+                .subDepartment(user.getSubDepartment())
                 .phoneNumber(user.getPhoneNumber())
                 .isActive(user.getIsActive())
                 .isDeleted(user.getIsDeleted())
-                .roles(roles)
+                .role(user.getRole())
+                .position(user.getPosition())
+                .area(user.getArea())
+                .generationId(user.getGeneration() != null ? user.getGeneration().getId() : null)
+                .generationName(user.getGeneration() != null ? user.getGeneration().getName() : null)
                 .build();
     }
 }

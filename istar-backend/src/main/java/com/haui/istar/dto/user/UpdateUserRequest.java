@@ -1,6 +1,6 @@
 package com.haui.istar.dto.user;
 
-import com.haui.istar.model.enums.Department;
+import com.haui.istar.model.enums.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -31,8 +30,12 @@ public class UpdateUserRequest {
     private LocalDate birthday;
     private String address;
     private Department department;
+    private SubDepartment subDepartment;
     private String phoneNumber;
     private Boolean isActive;
     private Boolean isDeleted;
-    private List<Integer> roles;
+    private Role role;
+    private Position position;
+    private Area area;
+    private Long generationId;
 }

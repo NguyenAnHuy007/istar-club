@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ROLE_0')") // Role 0 là master có thể truy cập tất cả các api
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
@@ -64,7 +64,6 @@ public class AdminUserController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request
     ) {
-        // Không cho phép admin thay đổi username của user ở endpoint này
         if (request.getUsername() != null && !request.getUsername().isEmpty()) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Không được sửa username"));
         }

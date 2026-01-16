@@ -5,16 +5,12 @@ import com.haui.istar.exception.BadRequestException;
 import com.haui.istar.exception.ResourceNotFoundException;
 import com.haui.istar.exception.UnauthorizedException;
 import com.haui.istar.model.User;
-import com.haui.istar.model.UserRole;
 import com.haui.istar.repository.UserRepository;
 import com.haui.istar.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -69,10 +65,6 @@ public class UserServiceImpl implements UserService {
     }
 
     private UserDto mapToUserDto(User user) {
-        List<Integer> roles = user.getRoles().stream()
-                .map(UserRole::getRole)
-                .collect(Collectors.toList());
-
         return UserDto.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -82,11 +74,15 @@ public class UserServiceImpl implements UserService {
                 .birthday(user.getBirthday())
                 .address(user.getAddress())
                 .department(user.getDepartment())
+                .subDepartment(user.getSubDepartment())
                 .phoneNumber(user.getPhoneNumber())
                 .isActive(user.getIsActive())
                 .isDeleted(user.getIsDeleted())
-                .roles(roles)
+                .role(user.getRole())
+                .position(user.getPosition())
+                .area(user.getArea())
+                .generationId(user.getGeneration() != null ? user.getGeneration().getId() : null)
+                .generationName(user.getGeneration() != null ? user.getGeneration().getName() : null)
                 .build();
     }
 }
-

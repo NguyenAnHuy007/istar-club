@@ -3,14 +3,19 @@ package com.haui.istar.service.impl;
 import com.haui.istar.dto.auth.LoginRequest;
 import com.haui.istar.dto.auth.LoginResponse;
 import com.haui.istar.dto.auth.RegisterRequest;
+import com.haui.istar.dto.auth.TokenRefreshRequest;
+import com.haui.istar.dto.auth.TokenRefreshResponse;
 import com.haui.istar.dto.user.UserDto;
 import com.haui.istar.exception.BadRequestException;
+import com.haui.istar.model.RefreshToken;
 import com.haui.istar.model.User;
-import com.haui.istar.model.UserRole;
+import com.haui.istar.model.enums.Role;
 import com.haui.istar.repository.UserRepository;
 import com.haui.istar.security.JwtTokenProvider;
 import com.haui.istar.security.UserPrincipal;
 import com.haui.istar.service.AuthService;
+import com.haui.istar.service.RefreshTokenService;
+import com.haui.istar.util.UserValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,10 +25,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -32,6 +33,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
+    private final UserValidator userValidator;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
     @Transactional
@@ -46,7 +49,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Email đã tồn tại!");
         }
 
-        // Tạo user mới
+        // Tạo user mới với role và position mặc định là MEMBER
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -56,19 +59,14 @@ public class AuthServiceImpl implements AuthService {
                 .birthday(request.getBirthday())
                 .address(request.getAddress())
                 .department(request.getDepartment())
-                .roles(new ArrayList<>())
+                .subDepartment(request.getSubDepartment())
+                .role(Role.MEMBER)
                 .build();
 
-        // Thêm roles
-        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
-            for (Integer roleNum : request.getRoles()) {
-                UserRole userRole = UserRole.builder()
-                        .user(user)
-                        .role(roleNum)
-                        .build();
-                user.getRoles().add(userRole);
-            }
-        }
+        // Validate business rules (area constraint, subDepartment)
+        // Không validate position limit vì user mới luôn là MEMBER
+        userValidator.validateAreaConstraint(user);
+        userValidator.validateSubDepartment(user);
 
         User savedUser = userRepository.save(user);
 
@@ -89,22 +87,35 @@ public class AuthServiceImpl implements AuthService {
 
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
 
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(userPrincipal.getId());
+
         assert userPrincipal != null;
         return LoginResponse.builder()
                 .token(jwt)
+                .refreshToken(refreshToken.getToken())
                 .type("Bearer")
                 .id(userPrincipal.getId())
                 .username(userPrincipal.getUsername())
                 .email(userPrincipal.getEmail())
-                .roles(userPrincipal.getRoleNumbers())
+                .role(userPrincipal.getRole())
                 .build();
     }
 
-    private UserDto mapToUserDto(User user) {
-        List<Integer> roles = user.getRoles().stream()
-                .map(UserRole::getRole)
-                .collect(Collectors.toList());
+    @Override
+    public TokenRefreshResponse refreshToken(TokenRefreshRequest request) {
+        String requestRefreshToken = request.getRefreshToken();
 
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String token = tokenProvider.generateToken(user.getId(), user.getUsername(), user.getRole().name());
+                    return new TokenRefreshResponse(token, requestRefreshToken);
+                })
+                .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
+    }
+
+    private UserDto mapToUserDto(User user) {
         return UserDto.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -114,10 +125,15 @@ public class AuthServiceImpl implements AuthService {
                 .birthday(user.getBirthday())
                 .address(user.getAddress())
                 .department(user.getDepartment())
+                .subDepartment(user.getSubDepartment())
                 .phoneNumber(user.getPhoneNumber())
                 .isActive(user.getIsActive())
                 .isDeleted(user.getIsDeleted())
-                .roles(roles)
+                .role(user.getRole())
+                .position(user.getPosition())
+                .area(user.getArea())
+                .generationId(user.getGeneration() != null ? user.getGeneration().getId() : null)
+                .generationName(user.getGeneration() != null ? user.getGeneration().getName() : null)
                 .build();
     }
 }
