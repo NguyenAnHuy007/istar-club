@@ -53,6 +53,9 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
                 .phoneNumber(request.getPhoneNumber())
                 .department(request.getDepartment())
                 .subDepartment(request.getSubDepartment())
+                .school(request.getSchool())
+                .majorClass(request.getMajorClass())
+                .course(request.getCourse())
                 .reasonDepartment(request.getReasonDepartment())
                 .knowIStar(request.getKnowIStar())
                 .reasonIStarer(request.getReasonIStarer())
@@ -67,6 +70,9 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
                 .phoneNumber(saved.getPhoneNumber())
                 .department(saved.getDepartment())
                 .subDepartment(saved.getSubDepartment())
+                .school(saved.getSchool())
+                .majorClass(saved.getMajorClass())
+                .course(saved.getCourse())
                 .build();
     }
     //cập nhật
@@ -92,6 +98,9 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
         entity.setPhoneNumber(request.getPhoneNumber());
         entity.setDepartment(request.getDepartment());
         entity.setSubDepartment(request.getSubDepartment());
+        entity.setSchool(request.getSchool());
+        entity.setMajorClass(request.getMajorClass());
+        entity.setCourse(request.getCourse());
         entity.setReasonDepartment(request.getReasonDepartment());
         entity.setKnowIStar(request.getKnowIStar());
         entity.setReasonIStarer(request.getReasonIStarer());
@@ -109,6 +118,9 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
                 .phoneNumber(entity.getPhoneNumber())
                 .department(entity.getDepartment())
                 .subDepartment(entity.getSubDepartment())
+                .school(entity.getSchool())
+                .majorClass(entity.getMajorClass())
+                .course(entity.getCourse())
                 .build();
     }
 

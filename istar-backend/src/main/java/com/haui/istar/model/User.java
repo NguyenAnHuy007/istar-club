@@ -42,6 +42,16 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 50)
+    private School school;
+
+    @Column(name = "major_class", length = 100)
+    private String majorClass;
+
+    @Column(length = 10)
+    private String course; // K16, K17, K18...
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50)
     private Department department;
 
     @Enumerated(EnumType.STRING)

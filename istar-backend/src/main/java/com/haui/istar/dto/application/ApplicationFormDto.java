@@ -3,6 +3,7 @@ package com.haui.istar.dto.application;
 import com.haui.istar.model.enums.ApplicationStatus;
 import com.haui.istar.model.enums.Department;
 import com.haui.istar.model.enums.SubDepartment;
+import com.haui.istar.model.enums.School;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,6 +27,9 @@ public class ApplicationFormDto {
     private String phoneNumber;
     private Department department;
     private SubDepartment subDepartment;
+    private School school;
+    private String majorClass;
+    private String course;
     private String reasonDepartment;
     private String knowIStar;
     private String reasonIStarer;

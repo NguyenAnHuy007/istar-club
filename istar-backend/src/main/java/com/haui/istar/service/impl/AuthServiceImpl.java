@@ -60,6 +60,9 @@ public class AuthServiceImpl implements AuthService {
                 .address(request.getAddress())
                 .department(request.getDepartment())
                 .subDepartment(request.getSubDepartment())
+                .school(request.getSchool())
+                .majorClass(request.getMajorClass())
+                .course(request.getCourse())
                 .role(Role.MEMBER)
                 .build();
 
@@ -126,6 +129,9 @@ public class AuthServiceImpl implements AuthService {
                 .address(user.getAddress())
                 .department(user.getDepartment())
                 .subDepartment(user.getSubDepartment())
+                .school(user.getSchool())
+                .majorClass(user.getMajorClass())
+                .course(user.getCourse())
                 .phoneNumber(user.getPhoneNumber())
                 .isActive(user.getIsActive())
                 .isDeleted(user.getIsDeleted())

@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import com.haui.istar.model.enums.Department;
 import com.haui.istar.model.enums.SubDepartment;
+import com.haui.istar.model.enums.School;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,4 +35,10 @@ public class ApplicationFormResponse {
     private Department department;
 
     private SubDepartment subDepartment;
+
+    private School school;
+
+    private String majorClass;
+
+    private String course;
 }

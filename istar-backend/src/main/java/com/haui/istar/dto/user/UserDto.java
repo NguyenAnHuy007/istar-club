@@ -23,6 +23,9 @@ public class UserDto {
     private String address;
     private Department department;
     private SubDepartment subDepartment;
+    private School school;
+    private String majorClass;
+    private String course;
     private String phoneNumber;
     private Boolean isActive;
     private Boolean isDeleted;
@@ -32,4 +35,3 @@ public class UserDto {
     private Long generationId;
     private String generationName;
 }
-

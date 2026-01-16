@@ -3,6 +3,7 @@ package com.haui.istar.model;
 import com.haui.istar.model.enums.ApplicationStatus;
 import com.haui.istar.model.enums.Department;
 import com.haui.istar.model.enums.SubDepartment;
+import com.haui.istar.model.enums.School;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -38,6 +39,16 @@ public class Application {
     
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50)
+    private School school;
+
+    @Column(name = "major_class", length = 100)
+    private String majorClass;
+
+    @Column(length = 10)
+    private String course; // K16, K17, K18...
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
