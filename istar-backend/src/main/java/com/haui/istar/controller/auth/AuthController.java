@@ -3,6 +3,8 @@ package com.haui.istar.controller.auth;
 import com.haui.istar.dto.auth.LoginRequest;
 import com.haui.istar.dto.auth.LoginResponse;
 import com.haui.istar.dto.auth.RegisterRequest;
+import com.haui.istar.dto.auth.TokenRefreshRequest;
+import com.haui.istar.dto.auth.TokenRefreshResponse;
 import com.haui.istar.dto.common.ApiResponse;
 import com.haui.istar.dto.user.UserDto;
 import com.haui.istar.service.AuthService;
@@ -29,5 +31,10 @@ public class AuthController {
         LoginResponse loginResponse = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công!", loginResponse));
     }
-}
 
+    @PostMapping("/refresh-token")
+    public ResponseEntity<ApiResponse<TokenRefreshResponse>> refreshToken(@Valid @RequestBody TokenRefreshRequest request) {
+        TokenRefreshResponse response = authService.refreshToken(request);
+        return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully!", response));
+    }
+}

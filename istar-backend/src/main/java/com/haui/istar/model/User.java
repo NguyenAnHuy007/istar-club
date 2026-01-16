@@ -1,13 +1,11 @@
 package com.haui.istar.model;
 
-import com.haui.istar.model.enums.Department;
+import com.haui.istar.model.enums.*;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -46,8 +44,32 @@ public class User {
     @Column(length = 50)
     private Department department;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50)
+    @Builder.Default
+    private SubDepartment subDepartment = SubDepartment.NONE;
+
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private Role role = Role.MEMBER;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    @Builder.Default
+    private Position position = Position.MEMBER;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private Area area = Area.HANOI;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "generation_id")
+    private Generation generation;
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default
@@ -72,8 +94,4 @@ public class User {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    @Builder.Default
-    private List<UserRole> roles = new ArrayList<>();
 }

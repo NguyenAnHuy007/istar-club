@@ -3,6 +3,7 @@ package com.haui.istar.dto.application;
 import java.time.LocalDate;
 
 import com.haui.istar.model.enums.Department;
+import com.haui.istar.model.enums.SubDepartment;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,4 +32,6 @@ public class ApplicationFormResponse {
     private String phoneNumber;
 
     private Department department;
+
+    private SubDepartment subDepartment;
 }

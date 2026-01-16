@@ -2,6 +2,7 @@ package com.haui.istar.model;
 
 import com.haui.istar.model.enums.ApplicationStatus;
 import com.haui.istar.model.enums.Department;
+import com.haui.istar.model.enums.SubDepartment;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -42,6 +43,11 @@ public class Application {
     @Column(nullable = false, length = 50)
     private Department department;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50)
+    @Builder.Default
+    private SubDepartment subDepartment = SubDepartment.NONE;
+
     @Column(nullable = false, length = 1000)
     private String reasonDepartment;
 
@@ -57,7 +63,7 @@ public class Application {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private ApplicationStatus status = ApplicationStatus.PENDING;
+    private ApplicationStatus status = ApplicationStatus.SUBMITTED;
 
     @Column(updatable = false)
     private LocalDateTime createdAt;

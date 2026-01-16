@@ -61,8 +61,11 @@ public class UserSpecification {
                 predicates.add(criteriaBuilder.equal(root.get("isDeleted"), criteria.getIsDeleted()));
             }
 
+            if (criteria.getSubDepartment() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("subDepartment"), criteria.getSubDepartment()));
+            }
+
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }
 }
-

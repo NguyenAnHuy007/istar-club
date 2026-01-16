@@ -77,6 +77,9 @@ public class AdminApplicationServiceImpl implements AdminApplicationService {
         if (request.getDepartment() != null) {
             application.setDepartment(request.getDepartment());
         }
+        if (request.getSubDepartment() != null) {
+            application.setSubDepartment(request.getSubDepartment());
+        }
         if (request.getReasonDepartment() != null) {
             application.setReasonDepartment(request.getReasonDepartment());
         }
@@ -133,6 +136,7 @@ public class AdminApplicationServiceImpl implements AdminApplicationService {
                 .address(application.getAddress())
                 .phoneNumber(application.getPhoneNumber())
                 .department(application.getDepartment())
+                .subDepartment(application.getSubDepartment())
                 .reasonDepartment(application.getReasonDepartment())
                 .knowIStar(application.getKnowIStar())
                 .reasonIStarer(application.getReasonIStarer())

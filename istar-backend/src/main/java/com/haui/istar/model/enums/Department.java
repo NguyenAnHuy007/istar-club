@@ -1,10 +1,18 @@
 package com.haui.istar.model.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum Department {
-    SING,
-    MUSICAL_INSTRUMENT,
-    RAP,
-    DANCE,
-    EVENT,
-    MODERN_DANCE
+    MUSIC("Âm nhạc"),
+    DANCE("Nhảy"),
+    TRADITIONAL_DANCE("Múa"),
+    EVENT("Sự kiện");
+
+    private final String displayName;
+
+    Department(String displayName) {
+        this.displayName = displayName;
+    }
+
 }

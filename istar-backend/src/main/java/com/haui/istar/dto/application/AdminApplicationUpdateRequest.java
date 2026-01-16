@@ -2,6 +2,7 @@ package com.haui.istar.dto.application;
 
 import com.haui.istar.model.enums.ApplicationStatus;
 import com.haui.istar.model.enums.Department;
+import com.haui.istar.model.enums.SubDepartment;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,6 +26,7 @@ public class AdminApplicationUpdateRequest {
     private String address;
     private String phoneNumber;
     private Department department;
+    private SubDepartment subDepartment;
     private String reasonDepartment;
     private String knowIStar;
     private String reasonIStarer;

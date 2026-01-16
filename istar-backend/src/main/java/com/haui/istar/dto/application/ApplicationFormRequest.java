@@ -3,6 +3,7 @@ package com.haui.istar.dto.application;
 import java.time.LocalDate;
 
 import com.haui.istar.model.enums.Department;
+import com.haui.istar.model.enums.SubDepartment;
 
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -36,6 +37,8 @@ public class ApplicationFormRequest {
     private String phoneNumber;
 
     private Department department;
+
+    private SubDepartment subDepartment;
 
     @NotBlank
     private String reasonDepartment;

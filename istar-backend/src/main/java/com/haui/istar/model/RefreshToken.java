@@ -3,24 +3,26 @@ package com.haui.istar.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Entity
-@Table(name = "user_roles")
+import java.time.Instant;
+
+@Entity(name = "refreshtoken")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserRole {
-
+public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @OneToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
 
-    @Column(nullable = false)
-    private Integer role;
-}
+    @Column(nullable = false, unique = true)
+    private String token;
 
+    @Column(nullable = false)
+    private Instant expiryDate;
+}
