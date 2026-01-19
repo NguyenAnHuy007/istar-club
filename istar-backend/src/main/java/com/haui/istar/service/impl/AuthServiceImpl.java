@@ -3,18 +3,14 @@ package com.haui.istar.service.impl;
 import com.haui.istar.dto.auth.LoginRequest;
 import com.haui.istar.dto.auth.LoginResponse;
 import com.haui.istar.dto.auth.RegisterRequest;
-import com.haui.istar.dto.auth.TokenRefreshRequest;
-import com.haui.istar.dto.auth.TokenRefreshResponse;
 import com.haui.istar.dto.user.UserDto;
 import com.haui.istar.exception.BadRequestException;
-import com.haui.istar.model.RefreshToken;
 import com.haui.istar.model.User;
 import com.haui.istar.model.enums.Role;
 import com.haui.istar.repository.UserRepository;
 import com.haui.istar.security.JwtTokenProvider;
 import com.haui.istar.security.UserPrincipal;
 import com.haui.istar.service.AuthService;
-import com.haui.istar.service.RefreshTokenService;
 import com.haui.istar.util.UserValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,7 +30,6 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
     private final UserValidator userValidator;
-    private final RefreshTokenService refreshTokenService;
 
     @Override
     @Transactional
@@ -60,6 +55,9 @@ public class AuthServiceImpl implements AuthService {
                 .address(request.getAddress())
                 .department(request.getDepartment())
                 .subDepartment(request.getSubDepartment())
+                .school(request.getSchool())
+                .majorClass(request.getMajorClass())
+                .course(request.getCourse())
                 .role(Role.MEMBER)
                 .build();
 
@@ -87,32 +85,15 @@ public class AuthServiceImpl implements AuthService {
 
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
 
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(userPrincipal.getId());
-
         assert userPrincipal != null;
         return LoginResponse.builder()
                 .token(jwt)
-                .refreshToken(refreshToken.getToken())
                 .type("Bearer")
                 .id(userPrincipal.getId())
                 .username(userPrincipal.getUsername())
                 .email(userPrincipal.getEmail())
                 .role(userPrincipal.getRole())
                 .build();
-    }
-
-    @Override
-    public TokenRefreshResponse refreshToken(TokenRefreshRequest request) {
-        String requestRefreshToken = request.getRefreshToken();
-
-        return refreshTokenService.findByToken(requestRefreshToken)
-                .map(refreshTokenService::verifyExpiration)
-                .map(RefreshToken::getUser)
-                .map(user -> {
-                    String token = tokenProvider.generateToken(user.getId(), user.getUsername(), user.getRole().name());
-                    return new TokenRefreshResponse(token, requestRefreshToken);
-                })
-                .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
     }
 
     private UserDto mapToUserDto(User user) {
@@ -126,6 +107,9 @@ public class AuthServiceImpl implements AuthService {
                 .address(user.getAddress())
                 .department(user.getDepartment())
                 .subDepartment(user.getSubDepartment())
+                .school(user.getSchool())
+                .majorClass(user.getMajorClass())
+                .course(user.getCourse())
                 .phoneNumber(user.getPhoneNumber())
                 .isActive(user.getIsActive())
                 .isDeleted(user.getIsDeleted())

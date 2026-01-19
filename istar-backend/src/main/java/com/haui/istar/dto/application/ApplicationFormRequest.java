@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import com.haui.istar.model.enums.Department;
 import com.haui.istar.model.enums.SubDepartment;
+import com.haui.istar.model.enums.School;
 
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -39,6 +40,12 @@ public class ApplicationFormRequest {
     private Department department;
 
     private SubDepartment subDepartment;
+
+    private School school;
+
+    private String majorClass;
+
+    private String course;
 
     @NotBlank
     private String reasonDepartment;

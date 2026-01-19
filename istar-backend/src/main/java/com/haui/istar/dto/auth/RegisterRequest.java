@@ -2,6 +2,7 @@ package com.haui.istar.dto.auth;
 
 import com.haui.istar.model.enums.Department;
 import com.haui.istar.model.enums.SubDepartment;
+import com.haui.istar.model.enums.School;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -41,4 +42,10 @@ public class RegisterRequest {
     private Department department;
 
     private SubDepartment subDepartment;
+
+    private School school;
+
+    private String majorClass;
+
+    private String course;
 }

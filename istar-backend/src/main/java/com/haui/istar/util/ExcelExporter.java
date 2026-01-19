@@ -21,6 +21,7 @@ public class ExcelExporter {
             String[] columns = {
                     "ID", "Email", "First Name", "Last Name",
                     "Birthday", "Address", "Phone Number",
+                    "School", "Major/Class", "Course",
                     "Department", "Sub Department", "Reason Department",
                     "Know IStar", "Reason IStarer",
                     "Created At", "Updated At", "CV URL"
@@ -54,16 +55,19 @@ public class ExcelExporter {
                 row.createCell(5).setCellValue(app.getAddress());
                 row.createCell(6).setCellValue(app.getPhoneNumber());
 
-                row.createCell(7).setCellValue(app.getDepartment() != null ? app.getDepartment().toString() : "");
-                row.createCell(8).setCellValue(app.getSubDepartment() != null ? app.getSubDepartment().getDisplayName() : "");
-                row.createCell(9).setCellValue(app.getReasonDepartment());
-                row.createCell(10).setCellValue(app.getKnowIStar());
-                row.createCell(11).setCellValue(app.getReasonIStarer());
+                row.createCell(7).setCellValue(app.getSchool() != null ? app.getSchool().getDisplayName() : "");
+                row.createCell(8).setCellValue(app.getMajorClass());
+                row.createCell(9).setCellValue(app.getCourse());
+                row.createCell(10).setCellValue(app.getDepartment() != null ? app.getDepartment().toString() : "");
+                row.createCell(11).setCellValue(app.getSubDepartment() != null ? app.getSubDepartment().getDisplayName() : "");
+                row.createCell(12).setCellValue(app.getReasonDepartment());
+                row.createCell(13).setCellValue(app.getKnowIStar());
+                row.createCell(14).setCellValue(app.getReasonIStarer());
 
-                row.createCell(12).setCellValue(app.getCreatedAt() != null ? app.getCreatedAt().toString() : "");
-                row.createCell(13).setCellValue(app.getUpdatedAt() != null ? app.getUpdatedAt().toString() : "");
+                row.createCell(15).setCellValue(app.getCreatedAt() != null ? app.getCreatedAt().toString() : "");
+                row.createCell(16).setCellValue(app.getUpdatedAt() != null ? app.getUpdatedAt().toString() : "");
 
-                row.createCell(14).setCellValue(app.getCvUrl());
+                row.createCell(17).setCellValue(app.getCvUrl());
             }
 
             workbook.write(out);

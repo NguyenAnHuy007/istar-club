@@ -114,6 +114,18 @@ public class AdminUserServiceImpl implements AdminUserService {
             user.setSubDepartment(request.getSubDepartment());
         }
 
+        if (request.getSchool() != null) {
+            user.setSchool(request.getSchool());
+        }
+
+        if (request.getMajorClass() != null) {
+            user.setMajorClass(request.getMajorClass());
+        }
+
+        if (request.getCourse() != null) {
+            user.setCourse(request.getCourse());
+        }
+
         // Cập nhật status
         if (request.getIsActive() != null) {
             user.setIsActive(request.getIsActive());
@@ -188,6 +200,9 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .address(user.getAddress())
                 .department(user.getDepartment())
                 .subDepartment(user.getSubDepartment())
+                .school(user.getSchool())
+                .majorClass(user.getMajorClass())
+                .course(user.getCourse())
                 .phoneNumber(user.getPhoneNumber())
                 .isActive(user.getIsActive())
                 .isDeleted(user.getIsDeleted())

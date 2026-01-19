@@ -13,7 +13,6 @@ import com.haui.istar.model.enums.Role;
 public class LoginResponse {
 
     private String token;
-    private String refreshToken; // Added
     private String type;
     private Long id;
     private String username;

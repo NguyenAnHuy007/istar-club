@@ -95,8 +95,7 @@ Trong dự án này, cần phân biệt rõ hai khái niệm thường bị nh�
 
 3.  **Bảo mật & Xác thực**
     *   *Thiếu sót*: Chưa có cơ chế xác thực email khi đăng ký.
-    *   *Thiếu sót*: JWT chưa có cơ chế Refresh Token, dẫn đến trải nghiệm người dùng kém (hết hạn phải login lại) hoặc rủi ro bảo mật (nếu để hạn quá dài).
-    *   *Đề xuất*: Thêm verify email flow và Refresh Token rotation.
+    *   *Đề xuất*: Thêm verify email flow.
 
 4.  **Hiệu năng Excel Export**
     *   *Vấn đề*: `ExcelExporter` load toàn bộ list vào RAM. Nếu danh sách applications lên tới hàng nghìn, sẽ gây `OutOfMemoryError`.
