@@ -93,4 +93,8 @@ public class Application {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    @ManyToOne
+    @JoinColumn(name= "user_id")
+    private User user;
 }

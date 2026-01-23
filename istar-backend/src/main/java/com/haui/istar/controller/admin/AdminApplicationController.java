@@ -6,6 +6,7 @@ import com.haui.istar.model.Application;
 import com.haui.istar.repository.ApplicationRepository;
 import com.haui.istar.service.AdminApplicationService;
 import com.haui.istar.service.ApplicationFormService;
+import com.haui.istar.service.impl.AdminApplicationServiceImpl;
 import com.haui.istar.util.FileUploadUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class AdminApplicationController {
     private final ApplicationFormService applicationFormService;
     private final AdminApplicationService adminApplicationService;
     private final ApplicationRepository repository;
+    private final AdminApplicationServiceImpl adminApplicationServiceImpl;
     @PostMapping("/search")
     public ResponseEntity<ApiResponse<Page<ApplicationFormDto>>> searchApplications(
             @RequestBody AdminApplicationSearchCriteria criteria) {
@@ -105,4 +107,14 @@ public class AdminApplicationController {
         return ResponseEntity.ok(url);
     }
 
+    @PostMapping("/{id}/create-account")
+    public ResponseEntity<ApiResponse<String>> createAccount(
+            @PathVariable Long id) {
+
+        adminApplicationServiceImpl.createAccountFromApprovedApplication(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Tạo tài khoản thành công")
+        );
+    }
 }
