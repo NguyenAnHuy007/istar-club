@@ -1,11 +1,13 @@
 package com.haui.istar.controller.admin;
 
-import com.haui.istar.dto.application.AdminApplicationSearchCriteria;
-import com.haui.istar.dto.application.AdminApplicationUpdateRequest;
+import com.haui.istar.dto.application.*;
 import com.haui.istar.dto.common.ApiResponse;
-import com.haui.istar.dto.application.ApplicationFormDto;
+import com.haui.istar.model.Application;
+import com.haui.istar.repository.ApplicationRepository;
 import com.haui.istar.service.AdminApplicationService;
 import com.haui.istar.service.ApplicationFormService;
+import com.haui.istar.service.impl.AdminApplicationServiceImpl;
+import com.haui.istar.util.FileUploadUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -14,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -26,7 +29,8 @@ public class AdminApplicationController {
 
     private final ApplicationFormService applicationFormService;
     private final AdminApplicationService adminApplicationService;
-
+    private final ApplicationRepository repository;
+    private final AdminApplicationServiceImpl adminApplicationServiceImpl;
     @PostMapping("/search")
     public ResponseEntity<ApiResponse<Page<ApplicationFormDto>>> searchApplications(
             @RequestBody AdminApplicationSearchCriteria criteria) {
@@ -85,4 +89,32 @@ public class AdminApplicationController {
                 .body(excelBytes);
     }
 
+    @PostMapping({"/upload", "/upload/{id}"})
+    public ResponseEntity<?> uploadFile(
+            @PathVariable(required = false) Long id,
+            @RequestParam("file") MultipartFile file
+    ) throws Exception {
+        if (id == null) {
+            return ResponseEntity.badRequest().body("Bạn chưa nhập ID!");
+        }
+        Application form = repository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy ứng viên"));
+
+        String url = FileUploadUtil.saveFile("uploads", file);
+
+        form.setAvatarUrl(url);        // nếu avatar thì đổi thành setAvatarUrl()
+        repository.save(form);
+
+        return ResponseEntity.ok(url);
+    }
+
+    @PostMapping("/{id}/create-account")
+    public ResponseEntity<ApiResponse<String>> createAccount(
+            @PathVariable Long id) {
+
+        adminApplicationServiceImpl.createAccountFromApprovedApplication(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Tạo tài khoản thành công")
+        );
+    }
 }

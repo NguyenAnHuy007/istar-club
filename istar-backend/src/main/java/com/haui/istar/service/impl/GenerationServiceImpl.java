@@ -97,6 +97,9 @@ public class GenerationServiceImpl implements GenerationService {
     public void activateGeneration(Long id) {
         Generation generation = generationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gen với id: " + id));
+        if (Boolean.TRUE.equals(generation.getIsActive())) {
+            throw new IllegalStateException("Generation đang được kích hoạt rồi");
+        }
         generation.setIsActive(true);
         generationRepository.save(generation);
     }
@@ -106,6 +109,9 @@ public class GenerationServiceImpl implements GenerationService {
     public void deactivateGeneration(Long id) {
         Generation generation = generationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gen với id: " + id));
+        if (Boolean.FALSE.equals(generation.getIsActive())) {
+            throw new IllegalStateException("Generation đang được vô hiệu hóa rồi");
+        }
         generation.setIsActive(false);
         generationRepository.save(generation);
     }

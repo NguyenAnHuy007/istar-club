@@ -6,6 +6,7 @@ import com.haui.istar.model.enums.Department;
 import com.haui.istar.model.enums.SubDepartment;
 import com.haui.istar.model.enums.School;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -55,6 +56,8 @@ public class ApplicationFormRequest {
 
     @NotBlank
     private String reasonIStarer;
+
+    private String avatarUrl;
 
     private String cvUrl;
 

@@ -1,8 +1,6 @@
 package com.haui.istar.service;
 
-import com.haui.istar.dto.application.AdminApplicationSearchCriteria;
-import com.haui.istar.dto.application.AdminApplicationUpdateRequest;
-import com.haui.istar.dto.application.ApplicationFormDto;
+import com.haui.istar.dto.application.*;
 import org.springframework.data.domain.Page;
 
 public interface AdminApplicationService {

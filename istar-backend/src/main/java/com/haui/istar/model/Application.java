@@ -69,6 +69,9 @@ public class Application {
     private String reasonIStarer;
 
     @Column(length = 500)
+    private String avatarUrl;
+
+    @Column(length = 500)
     private String cvUrl;
 
     @Enumerated(EnumType.STRING)
@@ -90,4 +93,8 @@ public class Application {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    @ManyToOne
+    @JoinColumn(name= "user_id")
+    private User user;
 }

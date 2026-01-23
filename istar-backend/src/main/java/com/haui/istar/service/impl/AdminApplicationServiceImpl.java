@@ -5,8 +5,11 @@ import com.haui.istar.dto.application.AdminApplicationSearchCriteria;
 import com.haui.istar.dto.application.AdminApplicationUpdateRequest;
 import com.haui.istar.exception.ResourceNotFoundException;
 import com.haui.istar.model.Application;
+import com.haui.istar.model.User;
 import com.haui.istar.model.enums.ApplicationStatus;
+import com.haui.istar.model.enums.Role;
 import com.haui.istar.repository.ApplicationRepository;
+import com.haui.istar.repository.UserRepository;
 import com.haui.istar.repository.specification.ApplicationSpecification;
 import com.haui.istar.service.AdminApplicationService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +18,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminApplicationServiceImpl implements AdminApplicationService {
 
     private final ApplicationRepository applicationRepository;
+    private final UserRepository userRepo;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public Page<ApplicationFormDto> searchApplications(AdminApplicationSearchCriteria criteria) {
@@ -157,5 +163,46 @@ public class AdminApplicationServiceImpl implements AdminApplicationService {
                 .createdAt(application.getCreatedAt())
                 .updatedAt(application.getUpdatedAt())
                 .build();
+    }
+
+    @Transactional
+    public void createAccountFromApprovedApplication(Long applicationId) {
+
+        Application app = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn"));
+
+        if (app.getStatus() != ApplicationStatus.APPROVED) {
+            throw new RuntimeException("Đơn chưa được duyệt");
+        }
+
+        if (app.getUser() != null) {
+            throw new RuntimeException("Application đã có tài khoản");
+        }
+
+        if (userRepo.existsByEmail(app.getEmail())) {
+            throw new RuntimeException("Email đã tồn tại");
+        }
+        User user = User.builder()
+                .username(app.getEmail())
+                .email(app.getEmail())
+                .password(passwordEncoder.encode("123456"))
+                .role(Role.MEMBER)
+                .birthday(app.getBirthday())
+                .phoneNumber(app.getPhoneNumber())
+                .department(app.getDepartment())
+                .firstName(app.getFirstName())
+                .lastName(app.getLastName())
+                .subDepartment(app.getSubDepartment())
+                .address(app.getAddress())
+                .course(app.getCourse())
+                .majorClass(app.getMajorClass())
+                .school(app.getSchool())
+                .isActive(true)
+                .build();
+
+        userRepo.save(user);
+
+        app.setUser(user);
+        applicationRepository.save(app);
     }
 }
