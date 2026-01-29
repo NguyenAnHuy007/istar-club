@@ -27,26 +27,14 @@ public class Generation {
     @Column(length = 500)
     private String description;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "is_deleted", nullable = false)
     @Builder.Default
-    private Boolean isActive = true;
-
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Boolean isDeleted = false;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
         if (yearJoined == null) {
             yearJoined = LocalDateTime.now().getYear();
         }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 }

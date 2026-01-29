@@ -1,13 +1,11 @@
 package com.haui.istar.repository;
 
 import com.haui.istar.model.User;
-import com.haui.istar.model.enums.Area;
 import com.haui.istar.model.enums.Department;
 import com.haui.istar.model.enums.Position;
-import com.haui.istar.model.enums.Role;
-import com.haui.istar.model.enums.SubDepartment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -16,15 +14,12 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
-    Optional<User> findByUsername(String username);
-
-    Optional<User> findByEmail(String email);
+    Optional<User> findByUsernameAndIsDeletedFalse(String username);
 
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);
 
-    // Query methods cho Position
     long countByPosition(Position position);
 
     long countByPositionAndIdNot(Position position, Long id);
@@ -33,30 +28,8 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     long countByPositionAndDepartmentAndIdNot(Position position, Department department, Long id);
 
-    List<User> findByPosition(Position position);
+    @Query("SELECT DISTINCT u.course FROM User u WHERE u.course IS NOT NULL AND u.isDeleted = false ORDER BY u.course DESC")
+    List<String> findDistinctCourses();
 
-    List<User> findByPositionAndDepartment(Position position, Department department);
-
-    // Query methods cho Area
-    long countByArea(Area area);
-
-    List<User> findByArea(Area area);
-
-    List<User> findByPositionAndArea(Position position, Area area);
-
-    // Query methods cho Department và SubDepartment
-    List<User> findByDepartment(Department department);
-
-    List<User> findByDepartmentAndSubDepartment(Department department, SubDepartment subDepartment);
-
-    // Query methods cho Role
-    List<User> findByRole(Role role);
-
-    // Query methods cho Generation
-    List<User> findByGeneration(com.haui.istar.model.Generation generation);
-
-    List<User> findByGenerationId(Long generationId);
-
-    long countByGenerationId(Long generationId);
+    List<User> findByGeneration_Id(Long generationId);
 }
-

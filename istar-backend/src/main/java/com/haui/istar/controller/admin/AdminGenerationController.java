@@ -72,39 +72,9 @@ public class AdminGenerationController {
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách gen thành công", generations));
     }
 
-    /**
-     * Lấy các gen đang hoạt động
-     */
-    @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<GenerationDto>>> getActiveGenerations() {
-        List<GenerationDto> generations = generationService.getActiveGenerations();
-        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách gen hoạt động thành công", generations));
-    }
-
-    /**
-     * Xóa gen
-     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteGeneration(@PathVariable Long id) {
-        generationService.deleteGeneration(id);
-        return ResponseEntity.ok(ApiResponse.success("Xóa gen thành công", null));
-    }
-
-    /**
-     * Kích hoạt gen
-     */
-    @PutMapping("/{id}/activate")
-    public ResponseEntity<ApiResponse<Void>> activateGeneration(@PathVariable Long id) {
-        generationService.activateGeneration(id);
-        return ResponseEntity.ok(ApiResponse.success("Kích hoạt gen thành công", null));
-    }
-
-    /**
-     * Vô hiệu hóa gen
-     */
-    @PutMapping("/{id}/deactivate")
-    public ResponseEntity<ApiResponse<Void>> deactivateGeneration(@PathVariable Long id) {
-        generationService.deactivateGeneration(id);
-        return ResponseEntity.ok(ApiResponse.success("Vô hiệu hóa gen thành công", null));
+    public ResponseEntity<ApiResponse<Void>> softDeleteGeneration(@PathVariable Long id) {
+        generationService.softDeleteGeneration(id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa mềm gen thành công", null));
     }
 }

@@ -12,6 +12,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+import java.util.List;
+
+import com.haui.istar.model.enums.Department;
+import com.haui.istar.model.enums.Position;
+
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
@@ -27,7 +33,7 @@ public class AdminUserController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<UserDto>>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "9999999") int size
     ) {
         Page<UserDto> users = adminUserService.getAllUsers(page, size);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách người dùng thành công", users));
@@ -101,5 +107,28 @@ public class AdminUserController {
         adminUserService.activateUser(id);
         return ResponseEntity.ok(ApiResponse.success("Kích hoạt tài khoản thành công", null));
     }
-}
 
+    /**
+     * API Lấy danh sách các Position cho bộ lọc
+     */
+    @GetMapping("/filters/positions")
+    public ResponseEntity<ApiResponse<List<Position>>> getPositions() {
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách chức vụ thành công", Arrays.asList(Position.values())));
+    }
+
+    /**
+     * API Lấy danh sách các Department cho bộ lọc
+     */
+    @GetMapping("/filters/departments")
+    public ResponseEntity<ApiResponse<List<Department>>> getDepartments() {
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách phòng ban thành công", Arrays.asList(Department.values())));
+    }
+
+    /**
+     * API Lấy danh sách các Course cho bộ lọc (Duy nhất)
+     */
+    @GetMapping("/filters/courses")
+    public ResponseEntity<ApiResponse<List<String>>> getCourses() {
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách khóa thành công", adminUserService.getAllUniqueCourses()));
+    }
+}

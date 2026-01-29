@@ -20,9 +20,5 @@ public interface GenerationService {
 
     void deleteGeneration(Long id);
 
-    void activateGeneration(Long id);
-
-    void deactivateGeneration(Long id);
-
-    List<GenerationDto> getActiveGenerations();
+    void softDeleteGeneration(Long id);
 }

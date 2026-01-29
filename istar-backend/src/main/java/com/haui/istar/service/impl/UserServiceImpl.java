@@ -23,6 +23,9 @@ public class UserServiceImpl implements UserService {
     public UserDto getProfile(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với id: " + userId));
+        if (Boolean.TRUE.equals(user.getIsDeleted())) {
+            throw new ResourceNotFoundException("Người dùng đã bị xóa");
+        }
         return mapToUserDto(user);
     }
 
@@ -31,6 +34,10 @@ public class UserServiceImpl implements UserService {
     public UserDto updateProfile(Long userId, com.haui.istar.dto.user.UpdateProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với id: " + userId));
+
+        if (Boolean.TRUE.equals(user.getIsDeleted())) {
+            throw new ResourceNotFoundException("Người dùng đã bị xóa");
+        }
 
         if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
             if (userRepository.existsByEmail(request.getEmail())) {
@@ -55,6 +62,10 @@ public class UserServiceImpl implements UserService {
     public void changePassword(Long userId, com.haui.istar.dto.user.ChangePasswordRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với id: " + userId));
+
+        if (Boolean.TRUE.equals(user.getIsDeleted())) {
+            throw new ResourceNotFoundException("Người dùng đã bị xóa");
+        }
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new UnauthorizedException("Mật khẩu cũ không đúng");

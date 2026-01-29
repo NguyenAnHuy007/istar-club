@@ -9,5 +9,6 @@ import com.haui.istar.model.Application;
 
 public interface ApplicationRepository extends JpaRepository<Application, Long>, JpaSpecificationExecutor<Application>{
     boolean existsByEmail(String email);
+    @SuppressWarnings("NullableProblems")
     Optional<Application> findById(Long id);
 }
