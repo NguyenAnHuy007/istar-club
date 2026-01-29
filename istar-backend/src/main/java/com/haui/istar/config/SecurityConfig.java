@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/me/**").authenticated()
                         .requestMatchers("/api/users/me").authenticated()
                         .requestMatchers("/api/applications/**").authenticated()
+                        .requestMatchers("/api/**").permitAll() // Tạm thời để vậy cho tiện test api
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

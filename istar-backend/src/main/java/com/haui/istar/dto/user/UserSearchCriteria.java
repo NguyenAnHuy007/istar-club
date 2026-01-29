@@ -1,5 +1,7 @@
 package com.haui.istar.dto.user;
 
+import com.haui.istar.model.enums.Department;
+import com.haui.istar.model.enums.Position;
 import com.haui.istar.model.enums.SubDepartment;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,11 +14,11 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UserSearchCriteria {
     private Long id;
-    private String username;
-    private String email;
-    private String phoneNumber;
-    private String firstName;
-    private String lastName;
+    private String keyword;
+    private Position position;
+    private Department department;
+    private Long generationId;
+    private String course;
     private Boolean isActive;
     private Boolean isDeleted;
     private SubDepartment subDepartment;
@@ -25,7 +27,7 @@ public class UserSearchCriteria {
     private Integer page = 0;
 
     @Builder.Default
-    private Integer size = 10;
+    private Integer size = Integer.MAX_VALUE;
 
     @Builder.Default
     private String sortBy = "id";

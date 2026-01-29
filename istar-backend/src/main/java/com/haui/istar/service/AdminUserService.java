@@ -4,6 +4,7 @@ import com.haui.istar.dto.user.UpdateUserRequest;
 import com.haui.istar.dto.user.UserDto;
 import com.haui.istar.dto.user.UserSearchCriteria;
 import org.springframework.data.domain.Page;
+import java.util.List;
 
 public interface AdminUserService {
     Page<UserDto> getAllUsers(int page, int size);
@@ -13,4 +14,5 @@ public interface AdminUserService {
     void softDeleteUser(Long id);
     void deactivateUser(Long id);
     void activateUser(Long id);
+    List<String> getAllUniqueCourses();
 }

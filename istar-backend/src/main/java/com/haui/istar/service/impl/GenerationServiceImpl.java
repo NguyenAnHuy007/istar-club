@@ -5,7 +5,9 @@ import com.haui.istar.dto.generation.GenerationDto;
 import com.haui.istar.exception.BadRequestException;
 import com.haui.istar.exception.ResourceNotFoundException;
 import com.haui.istar.model.Generation;
+import com.haui.istar.model.User;
 import com.haui.istar.repository.GenerationRepository;
+import com.haui.istar.repository.UserRepository;
 import com.haui.istar.service.GenerationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 public class GenerationServiceImpl implements GenerationService {
 
     private final GenerationRepository generationRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -35,7 +38,6 @@ public class GenerationServiceImpl implements GenerationService {
                 .name(request.getName())
                 .yearJoined(request.getYearJoined())
                 .description(request.getDescription())
-                .isActive(true)
                 .build();
 
         Generation saved = generationRepository.save(generation);
@@ -47,6 +49,10 @@ public class GenerationServiceImpl implements GenerationService {
     public GenerationDto updateGeneration(Long id, CreateGenerationRequest request) {
         Generation generation = generationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gen với id: " + id));
+
+        if (Boolean.TRUE.equals(generation.getIsDeleted())) {
+            throw new BadRequestException("Không thể cập nhật gen đã bị xóa");
+        }
 
         if (!generation.getName().equals(request.getName()) && generationRepository.existsByName(request.getName())) {
             throw new BadRequestException("Tên gen đã tồn tại: " + request.getName());
@@ -65,6 +71,9 @@ public class GenerationServiceImpl implements GenerationService {
     public GenerationDto getGenerationById(Long id) {
         Generation generation = generationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gen với id: " + id));
+        if (Boolean.TRUE.equals(generation.getIsDeleted())) {
+            throw new ResourceNotFoundException("Gen đã bị xóa");
+        }
         return mapToDto(generation);
     }
 
@@ -73,6 +82,7 @@ public class GenerationServiceImpl implements GenerationService {
     public List<GenerationDto> getAllGenerations() {
         return generationRepository.findAll(Sort.by(Sort.Direction.DESC, "yearJoined"))
                 .stream()
+                .filter(gen -> !Boolean.TRUE.equals(gen.getIsDeleted()))
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
@@ -81,7 +91,7 @@ public class GenerationServiceImpl implements GenerationService {
     @Transactional(readOnly = true)
     public Page<GenerationDto> getAllGenerations(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "yearJoined"));
-        return generationRepository.findAll(pageable).map(this::mapToDto);
+        return generationRepository.findByIsDeletedFalse(pageable).map(this::mapToDto);
     }
 
     @Override
@@ -94,35 +104,23 @@ public class GenerationServiceImpl implements GenerationService {
 
     @Override
     @Transactional
-    public void activateGeneration(Long id) {
+    public void softDeleteGeneration(Long id) {
         Generation generation = generationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gen với id: " + id));
-        if (Boolean.TRUE.equals(generation.getIsActive())) {
-            throw new IllegalStateException("Generation đang được kích hoạt rồi");
-        }
-        generation.setIsActive(true);
-        generationRepository.save(generation);
-    }
 
-    @Override
-    @Transactional
-    public void deactivateGeneration(Long id) {
-        Generation generation = generationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gen với id: " + id));
-        if (Boolean.FALSE.equals(generation.getIsActive())) {
-            throw new IllegalStateException("Generation đang được vô hiệu hóa rồi");
+        if (Boolean.TRUE.equals(generation.getIsDeleted())) {
+            throw new BadRequestException("Gen đã bị xóa rồi");
         }
-        generation.setIsActive(false);
-        generationRepository.save(generation);
-    }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<GenerationDto> getActiveGenerations() {
-        return generationRepository.findByIsActiveTrue()
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+        generation.setIsDeleted(true);
+        generationRepository.save(generation);
+
+        List<User> users = userRepository.findByGeneration_Id(id);
+
+        if (!users.isEmpty()) {
+            users.forEach(user -> user.setIsDeleted(true));
+            userRepository.saveAll(users);
+        }
     }
 
     private GenerationDto mapToDto(Generation generation) {
@@ -131,9 +129,7 @@ public class GenerationServiceImpl implements GenerationService {
                 .name(generation.getName())
                 .yearJoined(generation.getYearJoined())
                 .description(generation.getDescription())
-                .isActive(generation.getIsActive())
-                .createdAt(generation.getCreatedAt())
-                .updatedAt(generation.getUpdatedAt())
+                .isDeleted(generation.getIsDeleted())
                 .build();
     }
 }

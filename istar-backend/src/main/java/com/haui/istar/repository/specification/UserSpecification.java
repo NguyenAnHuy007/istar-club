@@ -18,39 +18,35 @@ public class UserSpecification {
                 predicates.add(criteriaBuilder.equal(root.get("id"), criteria.getId()));
             }
 
-            if (criteria.getUsername() != null && !criteria.getUsername().isEmpty()) {
-                predicates.add(criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("username")),
-                        "%" + criteria.getUsername().toLowerCase() + "%"
+            if (criteria.getKeyword() != null && !criteria.getKeyword().isEmpty()) {
+                String keyword = "%" + criteria.getKeyword().toLowerCase() + "%";
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("username")), keyword),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), keyword),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("firstName")), keyword),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("lastName")), keyword),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("phoneNumber")), keyword)
                 ));
             }
 
-            if (criteria.getEmail() != null && !criteria.getEmail().isEmpty()) {
-                predicates.add(criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("email")),
-                        "%" + criteria.getEmail().toLowerCase() + "%"
-                ));
+            if (criteria.getPosition() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("position"), criteria.getPosition()));
             }
 
-            if (criteria.getPhoneNumber() != null && !criteria.getPhoneNumber().isEmpty()) {
-                predicates.add(criteriaBuilder.like(
-                        root.get("phoneNumber"),
-                        "%" + criteria.getPhoneNumber() + "%"
-                ));
+            if (criteria.getDepartment() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("department"), criteria.getDepartment()));
             }
 
-            if (criteria.getFirstName() != null && !criteria.getFirstName().isEmpty()) {
-                predicates.add(criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("firstName")),
-                        "%" + criteria.getFirstName().toLowerCase() + "%"
-                ));
+            if (criteria.getSubDepartment() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("subDepartment"), criteria.getSubDepartment()));
             }
 
-            if (criteria.getLastName() != null && !criteria.getLastName().isEmpty()) {
-                predicates.add(criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("lastName")),
-                        "%" + criteria.getLastName().toLowerCase() + "%"
-                ));
+            if (criteria.getGenerationId() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("generation").get("id"), criteria.getGenerationId()));
+            }
+
+            if (criteria.getCourse() != null && !criteria.getCourse().isEmpty()) {
+                predicates.add(criteriaBuilder.equal(root.get("course"), criteria.getCourse()));
             }
 
             if (criteria.getIsActive() != null) {
@@ -59,10 +55,8 @@ public class UserSpecification {
 
             if (criteria.getIsDeleted() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("isDeleted"), criteria.getIsDeleted()));
-            }
-
-            if (criteria.getSubDepartment() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("subDepartment"), criteria.getSubDepartment()));
+            } else {
+                predicates.add(criteriaBuilder.equal(root.get("isDeleted"), false));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

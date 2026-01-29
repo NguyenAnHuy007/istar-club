@@ -97,27 +97,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private UserDto mapToUserDto(User user) {
-        return UserDto.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .birthday(user.getBirthday())
-                .address(user.getAddress())
-                .department(user.getDepartment())
-                .subDepartment(user.getSubDepartment())
-                .school(user.getSchool())
-                .majorClass(user.getMajorClass())
-                .course(user.getCourse())
-                .phoneNumber(user.getPhoneNumber())
-                .isActive(user.getIsActive())
-                .isDeleted(user.getIsDeleted())
-                .role(user.getRole())
-                .position(user.getPosition())
-                .area(user.getArea())
-                .generationId(user.getGeneration() != null ? user.getGeneration().getId() : null)
-                .generationName(user.getGeneration() != null ? user.getGeneration().getName() : null)
-                .build();
+        return UserDto.fromEntity(user);
     }
 }
