@@ -2,6 +2,8 @@ package com.haui.istar.repository.specification;
 
 import com.haui.istar.dto.user.UserSearchCriteria;
 import com.haui.istar.model.User;
+import com.haui.istar.model.UserDepartment;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -34,12 +36,10 @@ public class UserSpecification {
             }
 
             if (criteria.getDepartment() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("department"), criteria.getDepartment()));
+                Join<User, UserDepartment> udJoin = root.join("userDepartments");
+                predicates.add(criteriaBuilder.equal(udJoin.get("department"), criteria.getDepartment()));
             }
 
-            if (criteria.getSubDepartment() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("subDepartment"), criteria.getSubDepartment()));
-            }
 
             if (criteria.getGenerationId() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("generation").get("id"), criteria.getGenerationId()));

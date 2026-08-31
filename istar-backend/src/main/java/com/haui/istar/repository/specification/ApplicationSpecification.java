@@ -2,6 +2,8 @@ package com.haui.istar.repository.specification;
 
 import com.haui.istar.dto.application.AdminApplicationSearchCriteria;
 import com.haui.istar.model.Application;
+import com.haui.istar.model.ApplicationDepartment;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -47,16 +49,18 @@ public class ApplicationSpecification {
             }
 
             if (criteria.getDepartment() != null) {
-                predicates.add(cb.equal(root.get("department"), criteria.getDepartment()));
+                Join<Application, ApplicationDepartment> appDeptJoin = root.join("applicationDepartments");
+                predicates.add(cb.equal(appDeptJoin.get("department"), criteria.getDepartment()));
             }
 
-            if (criteria.getSubDepartment() != null) {
-                predicates.add(cb.equal(root.get("subDepartment"), criteria.getSubDepartment()));
-            }
 
             if (criteria.getStatus() != null) {
+                // Chúng ta vẫn có status trên Application cho luồng phỏng vấn chung (hoặc bạn có thể dùng status của ApplicationDepartment)
+                // Hiện tại tôi vẫn đang dùng ApplicationStatus trên cả hai. Hãy check trên bảng gốc Application.
                 predicates.add(cb.equal(root.get("status"), criteria.getStatus()));
             }
+            
+            // TODO: Thêm filter cho Recruitment nếu có trong Criteria
 
             if (criteria.getBirthdayFrom() != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("birthday"), criteria.getBirthdayFrom()));
@@ -73,6 +77,8 @@ public class ApplicationSpecification {
             if (criteria.getCreatedTo() != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), criteria.getCreatedTo().atTime(23, 59, 59)));
             }
+
+            predicates.add(cb.equal(root.get("isDeleted"), false));
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };

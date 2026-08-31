@@ -21,7 +21,6 @@ import com.haui.istar.model.enums.Position;
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
@@ -31,6 +30,7 @@ public class AdminUserController {
      * GET /api/admin/users?page=0&size=10
      */
     @GetMapping
+    @PreAuthorize("hasAuthority('PERM_USER_VIEW')")
     public ResponseEntity<ApiResponse<Page<UserDto>>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "9999999") int size
@@ -44,6 +44,7 @@ public class AdminUserController {
      * POST /api/admin/users/search
      */
     @PostMapping("/search")
+    @PreAuthorize("hasAuthority('PERM_USER_VIEW')")
     public ResponseEntity<ApiResponse<Page<UserDto>>> searchUsers(
             @RequestBody UserSearchCriteria criteria
     ) {
@@ -56,6 +57,7 @@ public class AdminUserController {
      * GET /api/admin/users/{id}
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERM_USER_VIEW')")
     public ResponseEntity<ApiResponse<UserDto>> getUserById(@PathVariable Long id) {
         UserDto user = adminUserService.getUserById(id);
         return ResponseEntity.ok(ApiResponse.success("Lấy thông tin người dùng thành công", user));
@@ -66,6 +68,7 @@ public class AdminUserController {
      * PUT /api/admin/users/{id}
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERM_USER_EDIT')")
     public ResponseEntity<ApiResponse<UserDto>> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request
@@ -83,6 +86,7 @@ public class AdminUserController {
      * DELETE /api/admin/users/{id}
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERM_USER_DELETE')")
     public ResponseEntity<ApiResponse<Void>> softDeleteUser(@PathVariable Long id) {
         adminUserService.softDeleteUser(id);
         return ResponseEntity.ok(ApiResponse.success("Xóa người dùng thành công", null));
@@ -93,6 +97,7 @@ public class AdminUserController {
      * PUT /api/admin/users/{id}/deactivate
      */
     @PutMapping("/{id}/deactivate")
+    @PreAuthorize("hasAuthority('PERM_USER_EDIT')")
     public ResponseEntity<ApiResponse<Void>> deactivateUser(@PathVariable Long id) {
         adminUserService.deactivateUser(id);
         return ResponseEntity.ok(ApiResponse.success("Vô hiệu hóa tài khoản thành công", null));
@@ -103,6 +108,7 @@ public class AdminUserController {
      * PUT /api/admin/users/{id}/activate
      */
     @PutMapping("/{id}/activate")
+    @PreAuthorize("hasAuthority('PERM_USER_EDIT')")
     public ResponseEntity<ApiResponse<Void>> activateUser(@PathVariable Long id) {
         adminUserService.activateUser(id);
         return ResponseEntity.ok(ApiResponse.success("Kích hoạt tài khoản thành công", null));

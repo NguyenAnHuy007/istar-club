@@ -1,10 +1,15 @@
 package com.haui.istar.service.impl;
 
+import com.haui.istar.dto.user.ChangePasswordRequest;
+import com.haui.istar.dto.user.UpdateProfileRequest;
+import com.haui.istar.dto.user.UserDepartmentRequest;
 import com.haui.istar.dto.user.UserDto;
 import com.haui.istar.exception.BadRequestException;
 import com.haui.istar.exception.ResourceNotFoundException;
 import com.haui.istar.exception.UnauthorizedException;
 import com.haui.istar.model.User;
+import com.haui.istar.model.UserDepartment;
+import com.haui.istar.model.enums.Position;
 import com.haui.istar.repository.UserRepository;
 import com.haui.istar.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -26,12 +31,12 @@ public class UserServiceImpl implements UserService {
         if (Boolean.TRUE.equals(user.getIsDeleted())) {
             throw new ResourceNotFoundException("Người dùng đã bị xóa");
         }
-        return mapToUserDto(user);
+        return UserDto.fromEntity(user);
     }
 
     @Override
     @Transactional
-    public UserDto updateProfile(Long userId, com.haui.istar.dto.user.UpdateProfileRequest request) {
+    public UserDto updateProfile(Long userId, UpdateProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với id: " + userId));
 
@@ -50,16 +55,27 @@ public class UserServiceImpl implements UserService {
         if (request.getLastName() != null) user.setLastName(request.getLastName());
         if (request.getBirthday() != null) user.setBirthday(request.getBirthday());
         if (request.getAddress() != null) user.setAddress(request.getAddress());
-        if (request.getDepartment() != null) user.setDepartment(request.getDepartment());
         if (request.getPhoneNumber() != null) user.setPhoneNumber(request.getPhoneNumber());
 
+        if (request.getUserDepartments() != null) {
+            user.getUserDepartments().clear();
+            for (UserDepartmentRequest udReq : request.getUserDepartments()) {
+                UserDepartment ud = UserDepartment.builder()
+                        .user(user)
+                        .department(udReq.getDepartment())
+                        .position(udReq.getPosition() != null ? udReq.getPosition() : Position.MEMBER)
+                        .build();
+                user.getUserDepartments().add(ud);
+            }
+        }
+
         User saved = userRepository.save(user);
-        return mapToUserDto(saved);
+        return UserDto.fromEntity(saved);
     }
 
     @Override
     @Transactional
-    public void changePassword(Long userId, com.haui.istar.dto.user.ChangePasswordRequest request) {
+    public void changePassword(Long userId, ChangePasswordRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với id: " + userId));
 
@@ -73,27 +89,5 @@ public class UserServiceImpl implements UserService {
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-    }
-
-    private UserDto mapToUserDto(User user) {
-        return UserDto.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .birthday(user.getBirthday())
-                .address(user.getAddress())
-                .department(user.getDepartment())
-                .subDepartment(user.getSubDepartment())
-                .phoneNumber(user.getPhoneNumber())
-                .isActive(user.getIsActive())
-                .isDeleted(user.getIsDeleted())
-                .role(user.getRole())
-                .position(user.getPosition())
-                .area(user.getArea())
-                .generationId(user.getGeneration() != null ? user.getGeneration().getId() : null)
-                .generationName(user.getGeneration() != null ? user.getGeneration().getName() : null)
-                .build();
     }
 }

@@ -2,7 +2,6 @@ package com.haui.istar.dto.user;
 
 import com.haui.istar.model.enums.Department;
 import com.haui.istar.model.enums.Position;
-import com.haui.istar.model.enums.SubDepartment;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,8 +20,6 @@ public class UserSearchCriteria {
     private String course;
     private Boolean isActive;
     private Boolean isDeleted;
-    private SubDepartment subDepartment;
-
     @Builder.Default
     private Integer page = 0;
 

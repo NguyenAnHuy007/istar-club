@@ -37,6 +37,16 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler({
+            org.springframework.orm.ObjectOptimisticLockingFailureException.class,
+            jakarta.persistence.OptimisticLockException.class,
+            org.springframework.dao.OptimisticLockingFailureException.class
+    })
+    public ResponseEntity<ApiResponse<Void>> handleOptimisticLockingFailureException(Exception ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error("Dữ liệu đã được cập nhật bởi một người dùng khác trong lúc bạn thao tác. Vui lòng tải lại trang để xem trạng thái mới nhất!"));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
         return ResponseEntity.badRequest()

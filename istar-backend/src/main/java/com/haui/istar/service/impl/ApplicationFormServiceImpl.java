@@ -1,47 +1,49 @@
 package com.haui.istar.service.impl;
 
-import com.haui.istar.util.ExcelExporter;
-import org.springframework.stereotype.Service;
-
+import com.haui.istar.dto.application.ApplicationDepartmentRequest;
 import com.haui.istar.dto.application.ApplicationFormRequest;
 import com.haui.istar.dto.application.ApplicationFormResponse;
+import com.haui.istar.exception.BadRequestException;
+import com.haui.istar.exception.ResourceNotFoundException;
 import com.haui.istar.model.Application;
+import com.haui.istar.model.ApplicationDepartment;
+import com.haui.istar.model.Recruitment;
+import com.haui.istar.repository.ApplicationDepartmentRepository;
 import com.haui.istar.repository.ApplicationRepository;
+import com.haui.istar.repository.RecruitmentRepository;
 import com.haui.istar.service.ApplicationFormService;
-
-import jakarta.persistence.EntityExistsException;
+import com.haui.istar.util.ExcelExporter;
+import com.haui.istar.util.FileUploadUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
-
-import com.haui.istar.exception.BadRequestException;
-import com.haui.istar.model.enums.Department;
-import com.haui.istar.model.enums.SubDepartment;
+import java.io.IOException;
 
 @Service
 @RequiredArgsConstructor
-public class ApplicationFormServiceImpl implements ApplicationFormService{
+public class ApplicationFormServiceImpl implements ApplicationFormService {
 
     private final ApplicationRepository repository;
-    //Thêm
+    private final RecruitmentRepository recruitmentRepository;
+    private final ApplicationDepartmentRepository applicationDepartmentRepository;
+
+    @Value("${app.upload.dir:uploads}")
+    private String uploadDir;
+
     @Override
+    @Transactional
     public ApplicationFormResponse submitApplication(ApplicationFormRequest request) {
+        // Removed subDepartment validation
 
-        // Validate subDepartment logic
-        if (request.getDepartment() == Department.MUSIC) {
-            if (request.getSubDepartment() == null || request.getSubDepartment() == SubDepartment.NONE) {
-                throw new BadRequestException("Thành viên Ban Âm nhạc phải chọn ban con (Hát/Rap/Nhạc cụ)");
-            }
-        } else {
-             // For other departments, force NONE if not already
-             if (request.getSubDepartment() != null && request.getSubDepartment() != SubDepartment.NONE) {
-                 request.setSubDepartment(SubDepartment.NONE);
-             }
-        }
-
-        // Check trùng email
-        if (repository.existsByEmail(request.getEmail())) {
-            throw new EntityExistsException("Email này đã ứng tuyển rồi!");
+        // Validate recruitment
+        Recruitment recruitment = recruitmentRepository.findByIdAndIsDeletedFalse(request.getRecruitmentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt tuyển với id: " + request.getRecruitmentId()));
+        if (!Boolean.TRUE.equals(recruitment.getIsActive())) {
+            throw new BadRequestException("Đợt tuyển này đã đóng!");
         }
 
         Application form = Application.builder()
@@ -51,60 +53,76 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
                 .birthday(request.getBirthday())
                 .address(request.getAddress())
                 .phoneNumber(request.getPhoneNumber())
-                .department(request.getDepartment())
-                .subDepartment(request.getSubDepartment())
                 .school(request.getSchool())
                 .majorClass(request.getMajorClass())
                 .course(request.getCourse())
                 .reasonDepartment(request.getReasonDepartment())
                 .knowIStar(request.getKnowIStar())
                 .reasonIStarer(request.getReasonIStarer())
+                .recruitment(recruitment)
                 .build();
 
         Application saved = repository.save(form);
+
+        for (ApplicationDepartmentRequest deptReq : request.getDepartments()) {
+            ApplicationDepartment appDept = ApplicationDepartment.builder()
+                    .application(saved)
+                    .department(deptReq.getDepartment())
+                    .build();
+            applicationDepartmentRepository.save(appDept);
+            saved.getApplicationDepartments().add(appDept);
+        }
 
         return ApplicationFormResponse.builder()
                 .id(saved.getId())
                 .fullName(saved.getFirstName() + " " + saved.getLastName())
                 .email(saved.getEmail())
                 .phoneNumber(saved.getPhoneNumber())
-                .department(saved.getDepartment())
-                .subDepartment(saved.getSubDepartment())
                 .school(saved.getSchool())
                 .majorClass(saved.getMajorClass())
                 .course(saved.getCourse())
+                .avatarUrl(saved.getAvatarUrl())
+                .cvUrl(saved.getCvUrl())
                 .build();
     }
-    //cập nhật
+
+    @Override
+    @Transactional
     public ApplicationFormResponse updateById(Long id, ApplicationFormRequest request) {
-
-        Application entity = repository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký"));
-
-        // Validate subDepartment logic
-        if (request.getDepartment() == Department.MUSIC) {
-            if (request.getSubDepartment() == null || request.getSubDepartment() == SubDepartment.NONE) {
-                throw new BadRequestException("Thành viên Ban Âm nhạc phải chọn ban con (Hát/Rap/Nhạc cụ)");
-            }
-        } else {
-             if (request.getSubDepartment() != null && request.getSubDepartment() != SubDepartment.NONE) {
-                 request.setSubDepartment(SubDepartment.NONE);
-             }
-        }
+        Application entity = repository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đăng ký với id: " + id));
 
         entity.setFirstName(request.getFirstName());
         entity.setLastName(request.getLastName());
         entity.setBirthday(request.getBirthday());
         entity.setAddress(request.getAddress());
         entity.setPhoneNumber(request.getPhoneNumber());
-        entity.setDepartment(request.getDepartment());
-        entity.setSubDepartment(request.getSubDepartment());
         entity.setSchool(request.getSchool());
         entity.setMajorClass(request.getMajorClass());
         entity.setCourse(request.getCourse());
         entity.setReasonDepartment(request.getReasonDepartment());
         entity.setKnowIStar(request.getKnowIStar());
         entity.setReasonIStarer(request.getReasonIStarer());
-        entity.setCvUrl(request.getCvUrl());
+        if (request.getAvatarUrl() != null) {
+            entity.setAvatarUrl(request.getAvatarUrl());
+        }
+        if (request.getCvUrl() != null) {
+            entity.setCvUrl(request.getCvUrl());
+        }
+
+        // Cập nhật department (trong phase 3)
+        if (request.getDepartments() != null) {
+            applicationDepartmentRepository.deleteByApplicationId(id);
+            entity.getApplicationDepartments().clear();
+            for (ApplicationDepartmentRequest deptReq : request.getDepartments()) {
+                ApplicationDepartment appDept = ApplicationDepartment.builder()
+                        .application(entity)
+                        .department(deptReq.getDepartment())
+                        .build();
+                applicationDepartmentRepository.save(appDept);
+                entity.getApplicationDepartments().add(appDept);
+            }
+        }
 
         repository.save(entity);
 
@@ -116,25 +134,62 @@ public class ApplicationFormServiceImpl implements ApplicationFormService{
                 .email(entity.getEmail())
                 .birthday(entity.getBirthday())
                 .phoneNumber(entity.getPhoneNumber())
-                .department(entity.getDepartment())
-                .subDepartment(entity.getSubDepartment())
                 .school(entity.getSchool())
                 .majorClass(entity.getMajorClass())
                 .course(entity.getCourse())
+                .avatarUrl(entity.getAvatarUrl())
+                .cvUrl(entity.getCvUrl())
                 .build();
     }
 
-    //Xóa
-    public void deleteById(Long id) {
-        Application entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký với id: " + id));
-
-        repository.delete(entity);
-    }
-    //Xuất excel
     @Override
+    @Transactional
+    public void deleteById(Long id) {
+        Application entity = repository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đăng ký với id: " + id));
+
+        entity.setIsDeleted(true);
+        repository.save(entity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ByteArrayInputStream exportExcel() {
-        var list = repository.findAll();
+        var list = repository.findByIsDeletedFalse();
         return ExcelExporter.applicationToExcel(list);
+    }
+
+    @Override
+    @Transactional
+    public String uploadAvatar(Long id, MultipartFile file) {
+        FileUploadUtil.validateAvatar(file);
+        Application form = repository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ứng viên với id: " + id));
+
+        try {
+            String url = FileUploadUtil.saveFile(uploadDir, file);
+            form.setAvatarUrl(url);
+            repository.save(form);
+            return url;
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi lưu file ảnh đại diện: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public String uploadCv(Long id, MultipartFile file) {
+        FileUploadUtil.validateCv(file);
+        Application form = repository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ứng viên với id: " + id));
+
+        try {
+            String url = FileUploadUtil.saveFile(uploadDir, file);
+            form.setCvUrl(url);
+            repository.save(form);
+            return url;
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi lưu file CV: " + e.getMessage());
+        }
     }
 }

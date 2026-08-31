@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -29,8 +30,6 @@ public class UpdateUserRequest {
     private String lastName;
     private LocalDate birthday;
     private String address;
-    private Department department;
-    private SubDepartment subDepartment;
     private School school;
     private String majorClass;
     private String course;
@@ -41,4 +40,5 @@ public class UpdateUserRequest {
     private Position position;
     private Area area;
     private Long generationId;
+    private List<UserDepartmentRequest> userDepartments;
 }

@@ -1,8 +1,6 @@
 package com.haui.istar.dto.application;
 
 import com.haui.istar.model.enums.ApplicationStatus;
-import com.haui.istar.model.enums.Department;
-import com.haui.istar.model.enums.SubDepartment;
 import com.haui.istar.model.enums.School;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
@@ -11,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -26,14 +25,14 @@ public class AdminApplicationUpdateRequest {
     private LocalDate birthday;
     private String address;
     private String phoneNumber;
-    private Department department;
-    private SubDepartment subDepartment;
+    private List<ApplicationDepartmentRequest> departments;
     private School school;
     private String majorClass;
     private String course;
     private String reasonDepartment;
     private String knowIStar;
     private String reasonIStarer;
+    private String avatarUrl;
     private String cvUrl;
     private ApplicationStatus status;
 }

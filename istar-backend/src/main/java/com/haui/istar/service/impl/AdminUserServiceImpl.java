@@ -3,6 +3,7 @@ package com.haui.istar.service.impl;
 import com.haui.istar.dto.user.*;
 import com.haui.istar.exception.BadRequestException;
 import com.haui.istar.model.*;
+import com.haui.istar.model.enums.*;
 import com.haui.istar.repository.GenerationRepository;
 import com.haui.istar.repository.UserRepository;
 import com.haui.istar.repository.specification.UserSpecification;
@@ -83,8 +84,6 @@ public class AdminUserServiceImpl implements AdminUserService {
         updateIfNotNull(request.getBirthday(), user::setBirthday);
         updateIfNotNull(request.getAddress(), user::setAddress);
         updateIfNotNull(request.getPhoneNumber(), user::setPhoneNumber);
-        updateIfNotNull(request.getDepartment(), user::setDepartment);
-        updateIfNotNull(request.getSubDepartment(), user::setSubDepartment);
         updateIfNotNull(request.getSchool(), user::setSchool);
         updateIfNotNull(request.getMajorClass(), user::setMajorClass);
         updateIfNotNull(request.getCourse(), user::setCourse);
@@ -96,6 +95,18 @@ public class AdminUserServiceImpl implements AdminUserService {
             Generation generation = generationRepository.findById(request.getGenerationId())
                     .orElseThrow(() -> new BadRequestException("Không tìm thấy gen với id: " + request.getGenerationId()));
             user.setGeneration(generation);
+        }
+
+        if (request.getUserDepartments() != null) {
+            user.getUserDepartments().clear();
+            for (UserDepartmentRequest udReq : request.getUserDepartments()) {
+                UserDepartment ud = UserDepartment.builder()
+                        .user(user)
+                        .department(udReq.getDepartment())
+                        .position(udReq.getPosition() != null ? udReq.getPosition() : Position.MEMBER)
+                        .build();
+                user.getUserDepartments().add(ud);
+            }
         }
         userValidator.validateUser(user, id);
         User savedUser = userRepository.save(user);

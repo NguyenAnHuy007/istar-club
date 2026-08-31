@@ -7,6 +7,7 @@ public enum ApplicationStatus {
 
     SUBMITTED("Đã submit"),
     CHECKED_IN("Đã checkin"),
+    INTERVIEWING("Đang phỏng vấn"),
     INTERVIEWED("Đã phỏng vấn"),
     NO_SHOW("Không đến phỏng vấn"),
     APPROVED("Đã duyệt"),

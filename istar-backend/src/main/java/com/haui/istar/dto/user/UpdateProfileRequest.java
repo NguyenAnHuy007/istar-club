@@ -1,6 +1,5 @@
 package com.haui.istar.dto.user;
 
-import com.haui.istar.model.enums.Department;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -26,7 +26,7 @@ public class UpdateProfileRequest {
 
     private String address;
 
-    private Department department;
+    private List<UserDepartmentRequest> userDepartments;
 
     private String phoneNumber;
 }

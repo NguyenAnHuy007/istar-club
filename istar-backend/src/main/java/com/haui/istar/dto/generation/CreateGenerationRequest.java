@@ -16,6 +16,7 @@ public class CreateGenerationRequest {
     @NotBlank(message = "Tên gen không được để trống")
     private String name;
 
+    @NotNull(message = "Năm tham gia không được để trống")
     private Integer yearJoined;
 
     private String description;

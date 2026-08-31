@@ -1,22 +1,18 @@
 package com.haui.istar.dto.application;
 
 import java.time.LocalDate;
+import java.util.List;
 
-import com.haui.istar.model.enums.Department;
-import com.haui.istar.model.enums.SubDepartment;
 import com.haui.istar.model.enums.School;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.web.multipart.MultipartFile;
 
 @Data
 @NoArgsConstructor
@@ -38,9 +34,11 @@ public class ApplicationFormRequest {
     @NotBlank(message = "Số điện thoại không được để trống")
     private String phoneNumber;
 
-    private Department department;
+    @NotNull(message = "recruitmentId không được để trống")
+    private Long recruitmentId;
 
-    private SubDepartment subDepartment;
+    @NotEmpty(message = "Phải chọn ít nhất một ban")
+    private List<ApplicationDepartmentRequest> departments;
 
     private School school;
 

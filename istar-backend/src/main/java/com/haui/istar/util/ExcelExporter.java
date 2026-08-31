@@ -1,6 +1,7 @@
 package com.haui.istar.util;
 
 import com.haui.istar.model.Application;
+import com.haui.istar.model.ApplicationDepartment;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
@@ -12,7 +13,8 @@ import java.util.List;
 public class ExcelExporter {
 
     public static ByteArrayInputStream applicationToExcel(List<Application> list) {
-        // Use SXSSFWorkbook for streaming (keep 100 rows in memory, flush others to disk)
+        // Use SXSSFWorkbook for streaming (keep 100 rows in memory, flush others to
+        // disk)
         try (SXSSFWorkbook workbook = new SXSSFWorkbook(100); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             SXSSFSheet sheet = workbook.createSheet("Applications");
@@ -22,7 +24,7 @@ public class ExcelExporter {
                     "ID", "Email", "First Name", "Last Name",
                     "Birthday", "Address", "Phone Number",
                     "School", "Major/Class", "Course",
-                    "Department", "Sub Department", "Reason Department",
+                    "Department", "Reason Department",
                     "Know IStar", "Reason IStarer",
                     "Created At", "Updated At", "CV URL"
             };
@@ -58,20 +60,26 @@ public class ExcelExporter {
                 row.createCell(7).setCellValue(app.getSchool() != null ? app.getSchool().getDisplayName() : "");
                 row.createCell(8).setCellValue(app.getMajorClass());
                 row.createCell(9).setCellValue(app.getCourse());
-                row.createCell(10).setCellValue(app.getDepartment() != null ? app.getDepartment().toString() : "");
-                row.createCell(11).setCellValue(app.getSubDepartment() != null ? app.getSubDepartment().getDisplayName() : "");
-                row.createCell(12).setCellValue(app.getReasonDepartment());
-                row.createCell(13).setCellValue(app.getKnowIStar());
-                row.createCell(14).setCellValue(app.getReasonIStarer());
+                StringBuilder depts = new StringBuilder();
+                if (app.getApplicationDepartments() != null) {
+                    for (ApplicationDepartment ad : app.getApplicationDepartments()) {
+                        depts.append(ad.getDepartment().getDisplayName()).append(", ");
+                    }
+                }
+                if (depts.length() > 0) depts.setLength(depts.length() - 2);
 
-                row.createCell(15).setCellValue(app.getCreatedAt() != null ? app.getCreatedAt().toString() : "");
-                row.createCell(16).setCellValue(app.getUpdatedAt() != null ? app.getUpdatedAt().toString() : "");
+                row.createCell(10).setCellValue(depts.toString());
+                row.createCell(11).setCellValue(app.getReasonDepartment());
+                row.createCell(12).setCellValue(app.getKnowIStar());
+                row.createCell(13).setCellValue(app.getReasonIStarer());
 
-                row.createCell(17).setCellValue(app.getCvUrl());
+                row.createCell(14).setCellValue(app.getCreatedAt() != null ? app.getCreatedAt().toString() : "");
+                row.createCell(15).setCellValue(app.getUpdatedAt() != null ? app.getUpdatedAt().toString() : "");
+
+                row.createCell(16).setCellValue(app.getCvUrl());
             }
 
             workbook.write(out);
-            workbook.dispose(); // Dispose of temporary files used for streaming
             return new ByteArrayInputStream(out.toByteArray());
 
         } catch (Exception e) {

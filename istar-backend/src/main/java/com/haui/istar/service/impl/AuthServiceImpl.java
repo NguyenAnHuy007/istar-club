@@ -3,9 +3,12 @@ package com.haui.istar.service.impl;
 import com.haui.istar.dto.auth.LoginRequest;
 import com.haui.istar.dto.auth.LoginResponse;
 import com.haui.istar.dto.auth.RegisterRequest;
+import com.haui.istar.dto.user.UserDepartmentRequest;
 import com.haui.istar.dto.user.UserDto;
 import com.haui.istar.exception.BadRequestException;
 import com.haui.istar.model.User;
+import com.haui.istar.model.UserDepartment;
+import com.haui.istar.model.enums.Position;
 import com.haui.istar.model.enums.Role;
 import com.haui.istar.repository.UserRepository;
 import com.haui.istar.security.JwtTokenProvider;
@@ -53,18 +56,24 @@ public class AuthServiceImpl implements AuthService {
                 .lastName(request.getLastName())
                 .birthday(request.getBirthday())
                 .address(request.getAddress())
-                .department(request.getDepartment())
-                .subDepartment(request.getSubDepartment())
                 .school(request.getSchool())
                 .majorClass(request.getMajorClass())
                 .course(request.getCourse())
                 .role(Role.MEMBER)
                 .build();
 
-        // Validate business rules (area constraint, subDepartment)
-        // Không validate position limit vì user mới luôn là MEMBER
-        userValidator.validateAreaConstraint(user);
-        userValidator.validateSubDepartment(user);
+        if (request.getUserDepartments() != null) {
+            for (UserDepartmentRequest udReq : request.getUserDepartments()) {
+                UserDepartment ud = UserDepartment.builder()
+                        .user(user)
+                        .department(udReq.getDepartment())
+                        .position(udReq.getPosition() != null ? udReq.getPosition() : Position.MEMBER)
+                        .build();
+                user.getUserDepartments().add(ud);
+            }
+        }
+
+        userValidator.validateUser(user, null);
 
         User savedUser = userRepository.save(user);
 
