@@ -3,8 +3,6 @@ package com.haui.istar.dto.application;
 import java.time.LocalDate;
 import java.util.List;
 
-import com.haui.istar.model.enums.School;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -40,14 +38,11 @@ public class ApplicationFormRequest {
     @NotEmpty(message = "Phải chọn ít nhất một ban")
     private List<ApplicationDepartmentRequest> departments;
 
-    private School school;
+    private String school;
 
     private String majorClass;
 
     private String course;
-
-    @NotBlank
-    private String reasonDepartment;
 
     @NotBlank
     private String knowIStar;
@@ -56,7 +51,5 @@ public class ApplicationFormRequest {
     private String reasonIStarer;
 
     private String avatarUrl;
-
-    private String cvUrl;
 
 }

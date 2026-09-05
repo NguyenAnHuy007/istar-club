@@ -1,8 +1,7 @@
 package com.haui.istar.dto.application;
 
 import java.time.LocalDate;
-
-import com.haui.istar.model.enums.School;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,15 +29,13 @@ public class ApplicationFormResponse {
 
     private String phoneNumber;
 
-    private java.util.List<ApplicationDepartmentDto> applicationDepartments;
+    private List<ApplicationDepartmentDto> applicationDepartments;
 
-    private School school;
+    private String school;
 
     private String majorClass;
 
     private String course;
 
     private String avatarUrl;
-
-    private String cvUrl;
 }

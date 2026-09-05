@@ -12,14 +12,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class UserSearchCriteria {
-    private Long id;
     private String keyword;
     private Position position;
     private Department department;
     private Long generationId;
     private String course;
     private Boolean isActive;
-    private Boolean isDeleted;
     @Builder.Default
     private Integer page = 0;
 

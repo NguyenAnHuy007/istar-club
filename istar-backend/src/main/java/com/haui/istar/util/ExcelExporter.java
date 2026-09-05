@@ -24,9 +24,9 @@ public class ExcelExporter {
                     "ID", "Email", "First Name", "Last Name",
                     "Birthday", "Address", "Phone Number",
                     "School", "Major/Class", "Course",
-                    "Department", "Reason Department",
+                    "Department",
                     "Know IStar", "Reason IStarer",
-                    "Created At", "Updated At", "CV URL"
+                    "Created At", "Updated At"
             };
 
             // Header
@@ -57,7 +57,7 @@ public class ExcelExporter {
                 row.createCell(5).setCellValue(app.getAddress());
                 row.createCell(6).setCellValue(app.getPhoneNumber());
 
-                row.createCell(7).setCellValue(app.getSchool() != null ? app.getSchool().getDisplayName() : "");
+                row.createCell(7).setCellValue(app.getSchool() != null ? app.getSchool() : "");
                 row.createCell(8).setCellValue(app.getMajorClass());
                 row.createCell(9).setCellValue(app.getCourse());
                 StringBuilder depts = new StringBuilder();
@@ -69,14 +69,11 @@ public class ExcelExporter {
                 if (depts.length() > 0) depts.setLength(depts.length() - 2);
 
                 row.createCell(10).setCellValue(depts.toString());
-                row.createCell(11).setCellValue(app.getReasonDepartment());
-                row.createCell(12).setCellValue(app.getKnowIStar());
-                row.createCell(13).setCellValue(app.getReasonIStarer());
+                row.createCell(11).setCellValue(app.getKnowIStar());
+                row.createCell(12).setCellValue(app.getReasonIStarer());
 
-                row.createCell(14).setCellValue(app.getCreatedAt() != null ? app.getCreatedAt().toString() : "");
-                row.createCell(15).setCellValue(app.getUpdatedAt() != null ? app.getUpdatedAt().toString() : "");
-
-                row.createCell(16).setCellValue(app.getCvUrl());
+                row.createCell(13).setCellValue(app.getCreatedAt() != null ? app.getCreatedAt().toString() : "");
+                row.createCell(14).setCellValue(app.getUpdatedAt() != null ? app.getUpdatedAt().toString() : "");
             }
 
             workbook.write(out);

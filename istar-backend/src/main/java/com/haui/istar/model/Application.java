@@ -1,7 +1,6 @@
 package com.haui.istar.model;
 
 import com.haui.istar.model.enums.ApplicationStatus;
-import com.haui.istar.model.enums.School;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -43,9 +42,8 @@ public class Application {
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
-    @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    private School school;
+    private String school;
 
     @Column(name = "major_class", length = 100)
     private String majorClass;
@@ -62,9 +60,6 @@ public class Application {
     private Set<ApplicationDepartment> applicationDepartments = new HashSet<>();
 
     @Column(nullable = false, length = 1000)
-    private String reasonDepartment;
-
-    @Column(nullable = false, length = 1000)
     private String knowIStar;
 
     @Column(nullable = false, length = 1000)
@@ -72,9 +67,6 @@ public class Application {
 
     @Column(length = 500)
     private String avatarUrl;
-
-    @Column(length = 500)
-    private String cvUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

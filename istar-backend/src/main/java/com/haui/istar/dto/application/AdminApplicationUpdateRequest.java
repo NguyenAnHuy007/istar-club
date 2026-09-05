@@ -1,7 +1,6 @@
 package com.haui.istar.dto.application;
 
 import com.haui.istar.model.enums.ApplicationStatus;
-import com.haui.istar.model.enums.School;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,13 +25,11 @@ public class AdminApplicationUpdateRequest {
     private String address;
     private String phoneNumber;
     private List<ApplicationDepartmentRequest> departments;
-    private School school;
+    private String school;
     private String majorClass;
     private String course;
-    private String reasonDepartment;
     private String knowIStar;
     private String reasonIStarer;
     private String avatarUrl;
-    private String cvUrl;
     private ApplicationStatus status;
 }

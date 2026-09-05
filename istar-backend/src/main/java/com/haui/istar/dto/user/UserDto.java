@@ -26,7 +26,7 @@ public class UserDto {
     private String lastName;
     private LocalDate birthday;
     private String address;
-    private School school;
+    private String school;
     private String majorClass;
     private String course;
     private String phoneNumber;

@@ -1,7 +1,6 @@
 package com.haui.istar.dto.application;
 
 import com.haui.istar.model.enums.ApplicationStatus;
-import com.haui.istar.model.enums.School;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,14 +23,12 @@ public class ApplicationFormDto {
     private LocalDate birthday;
     private String address;
     private String phoneNumber;
-    private School school;
+    private String school;
     private String majorClass;
     private String course;
-    private String reasonDepartment;
     private String knowIStar;
     private String reasonIStarer;
     private String avatarUrl;
-    private String cvUrl;
     private ApplicationStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

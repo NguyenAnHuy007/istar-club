@@ -1,15 +1,20 @@
 package com.haui.istar.config;
 
+import com.haui.istar.model.CommonCode;
 import com.haui.istar.model.Permission;
 import com.haui.istar.model.PermissionGroup;
 import com.haui.istar.model.User;
+import com.haui.istar.model.enums.Position;
 import com.haui.istar.model.enums.Role;
+import com.haui.istar.repository.CommonCodeRepository;
 import com.haui.istar.repository.PermissionGroupRepository;
 import com.haui.istar.repository.PermissionRepository;
 import com.haui.istar.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,13 +31,18 @@ public class DataSeeder implements CommandLineRunner {
     private final PermissionRepository permissionRepository;
     private final PermissionGroupRepository permissionGroupRepository;
     private final UserRepository userRepository;
+    private final CommonCodeRepository commonCodeRepository;
+    @Lazy
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
         seedPermissions();
         seedPermissionGroups();
+        seedDefaultAdmin();
         seedAdminPermissions();
+        seedCommonCodes();
     }
 
     private void seedPermissions() {
@@ -57,7 +67,8 @@ public class DataSeeder implements CommandLineRunner {
                 Permission.builder().code("USER_DELETE").name("Xóa thành viên").module("USER").build(),
                 Permission.builder().code("USER_MANAGE_PERMISSIONS").name("Quản lý quyền thành viên").module("USER").build(),
                 Permission.builder().code("GENERATION_MANAGE").name("Quản lý thế hệ").module("GENERATION").build(),
-                Permission.builder().code("RECRUITMENT_MANAGE").name("Quản lý đợt tuyển").module("RECRUITMENT").build()
+                Permission.builder().code("RECRUITMENT_MANAGE").name("Quản lý đợt tuyển").module("RECRUITMENT").build(),
+                Permission.builder().code("COMMON_CODE_MANAGE").name("Quản lý danh mục cấu hình").module("CONFIG").build()
         );
         permissionRepository.saveAll(permissions);
     }
@@ -106,6 +117,31 @@ public class DataSeeder implements CommandLineRunner {
         permissionGroupRepository.saveAll(Arrays.asList(adminGroup, receptionistGroup, interviewerGroup, reviewerGroup));
     }
 
+    private void seedDefaultAdmin() {
+        if (!userRepository.existsByUsername("admin")) {
+            log.info("Seeding default admin account (admin / admin123)...");
+            PermissionGroup adminGroup = permissionGroupRepository.findByCode("ADMIN").orElse(null);
+            Set<PermissionGroup> groups = new HashSet<>();
+            if (adminGroup != null) {
+                groups.add(adminGroup);
+            }
+            User admin = User.builder()
+                    .username("admin")
+                    .password(passwordEncoder.encode("admin123"))
+                    .email("admin@istar.club")
+                    .firstName("Quản trị")
+                    .lastName("Viên")
+                    .role(Role.ADMIN)
+                    .position(Position.PRESIDENT)
+                    .isActive(true)
+                    .isDeleted(false)
+                    .permissionGroups(groups)
+                    .build();
+            userRepository.save(admin);
+            log.info("Default admin account created successfully.");
+        }
+    }
+
     private void seedAdminPermissions() {
         List<User> admins = userRepository.findAll();
         PermissionGroup adminGroup = permissionGroupRepository.findByCode("ADMIN").orElse(null);
@@ -133,5 +169,23 @@ public class DataSeeder implements CommandLineRunner {
             }
         }
         return result;
+    }
+
+    private void seedCommonCodes() {
+        if (commonCodeRepository.count() > 0) {
+            return;
+        }
+        log.info("Seeding common codes for SCHOOL...");
+        List<CommonCode> schools = Arrays.asList(
+                CommonCode.builder().category("SCHOOL").code("CNTT").name("Trường Công nghệ Thông tin").orderIndex(1).isActive(true).build(),
+                CommonCode.builder().category("SCHOOL").code("KINH_TE").name("Trường Kinh tế").orderIndex(2).isActive(true).build(),
+                CommonCode.builder().category("SCHOOL").code("CO_KHI_O_TO").name("Trường Cơ khí - Ô tô").orderIndex(3).isActive(true).build(),
+                CommonCode.builder().category("SCHOOL").code("DIEN_DIEN_TU").name("Trường Điện - Điện tử").orderIndex(4).isActive(true).build(),
+                CommonCode.builder().category("SCHOOL").code("NGOAI_NGU_DU_LICH").name("Trường Ngoại ngữ Du lịch").orderIndex(5).isActive(true).build(),
+                CommonCode.builder().category("SCHOOL").code("MAY_THIET_KE").name("Khoa May và Thiết kế Thời trang").orderIndex(6).isActive(true).build(),
+                CommonCode.builder().category("SCHOOL").code("HOA").name("Khoa Hóa").orderIndex(7).isActive(true).build(),
+                CommonCode.builder().category("SCHOOL").code("VIET_NHAT").name("Trung tâm Việt Nhật").orderIndex(8).isActive(true).build()
+        );
+        commonCodeRepository.saveAll(schools);
     }
 }

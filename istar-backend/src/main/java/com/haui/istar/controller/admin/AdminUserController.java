@@ -1,6 +1,7 @@
 package com.haui.istar.controller.admin;
 
 import com.haui.istar.dto.common.ApiResponse;
+import com.haui.istar.dto.user.BulkUserActionRequest;
 import com.haui.istar.dto.user.UpdateUserRequest;
 import com.haui.istar.dto.user.UserDto;
 import com.haui.istar.dto.user.UserSearchCriteria;
@@ -112,6 +113,32 @@ public class AdminUserController {
     public ResponseEntity<ApiResponse<Void>> activateUser(@PathVariable Long id) {
         adminUserService.activateUser(id);
         return ResponseEntity.ok(ApiResponse.success("Kích hoạt tài khoản thành công", null));
+    }
+
+    /**
+     * Vô hiệu hóa hàng loạt tài khoản user
+     * PUT /api/admin/users/bulk-deactivate
+     */
+    @PutMapping("/bulk-deactivate")
+    @PreAuthorize("hasAuthority('PERM_USER_EDIT')")
+    public ResponseEntity<ApiResponse<Void>> bulkDeactivateUsers(
+            @Valid @RequestBody BulkUserActionRequest request
+    ) {
+        adminUserService.bulkDeactivateUsers(request.getUserIds());
+        return ResponseEntity.ok(ApiResponse.success("Vô hiệu hóa các tài khoản đã chọn thành công", null));
+    }
+
+    /**
+     * Xóa mềm hàng loạt tài khoản user
+     * POST /api/admin/users/bulk-delete
+     */
+    @PostMapping("/bulk-delete")
+    @PreAuthorize("hasAuthority('PERM_USER_DELETE')")
+    public ResponseEntity<ApiResponse<Void>> bulkSoftDeleteUsers(
+            @Valid @RequestBody BulkUserActionRequest request
+    ) {
+        adminUserService.bulkSoftDeleteUsers(request.getUserIds());
+        return ResponseEntity.ok(ApiResponse.success("Xóa các người dùng đã chọn thành công", null));
     }
 
     /**

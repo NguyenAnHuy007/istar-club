@@ -5,6 +5,7 @@ import com.haui.istar.exception.BadRequestException;
 import com.haui.istar.model.*;
 import com.haui.istar.model.enums.*;
 import com.haui.istar.repository.GenerationRepository;
+import com.haui.istar.repository.UserDepartmentRepository;
 import com.haui.istar.repository.UserRepository;
 import com.haui.istar.repository.specification.UserSpecification;
 import com.haui.istar.service.AdminUserService;
@@ -16,6 +17,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.stream.Collectors;
 import static com.haui.istar.util.ServiceUpdateUtils.updateIfChanged;
 import static com.haui.istar.util.ServiceUpdateUtils.updateIfNotNull;
 
@@ -23,6 +28,7 @@ import static com.haui.istar.util.ServiceUpdateUtils.updateIfNotNull;
 @RequiredArgsConstructor
 public class AdminUserServiceImpl implements AdminUserService {
     private final UserRepository userRepository;
+    private final UserDepartmentRepository userDepartmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserValidator userValidator;
     private final GenerationRepository generationRepository;
@@ -98,14 +104,38 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
 
         if (request.getUserDepartments() != null) {
-            user.getUserDepartments().clear();
+            Map<Department, Position> requestedDepts = new HashMap<>();
             for (UserDepartmentRequest udReq : request.getUserDepartments()) {
-                UserDepartment ud = UserDepartment.builder()
-                        .user(user)
-                        .department(udReq.getDepartment())
-                        .position(udReq.getPosition() != null ? udReq.getPosition() : Position.MEMBER)
-                        .build();
-                user.getUserDepartments().add(ud);
+                if (udReq.getDepartment() != null) {
+                    requestedDepts.put(
+                            udReq.getDepartment(),
+                            udReq.getPosition() != null ? udReq.getPosition() : Position.MEMBER
+                    );
+                }
+            }
+
+            // 1. Xóa các ban cũ không còn trong danh sách yêu cầu (orphanRemoval sẽ tự động delete khỏi DB)
+            user.getUserDepartments().removeIf(ud -> !requestedDepts.containsKey(ud.getDepartment()));
+
+            // 2. Cập nhật vị trí (Position) cho các ban đang có
+            for (UserDepartment ud : user.getUserDepartments()) {
+                ud.setPosition(requestedDepts.get(ud.getDepartment()));
+            }
+
+            // 3. Thêm các ban mới chưa tồn tại trong danh sách của user
+            Set<Department> existingDepts = user.getUserDepartments().stream()
+                    .map(UserDepartment::getDepartment)
+                    .collect(Collectors.toSet());
+
+            for (Map.Entry<Department, Position> entry : requestedDepts.entrySet()) {
+                if (!existingDepts.contains(entry.getKey())) {
+                    UserDepartment newUd = UserDepartment.builder()
+                            .user(user)
+                            .department(entry.getKey())
+                            .position(entry.getValue())
+                            .build();
+                    user.getUserDepartments().add(newUd);
+                }
             }
         }
         userValidator.validateUser(user, id);
@@ -127,6 +157,17 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Override
     @Transactional
+    public void bulkSoftDeleteUsers(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) return;
+        List<User> users = userRepository.findAllById(userIds);
+        for (User user : users) {
+            user.setIsDeleted(true);
+        }
+        userRepository.saveAll(users);
+    }
+
+    @Override
+    @Transactional
     public void deactivateUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với id: " + id));
@@ -135,6 +176,19 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
         user.setIsActive(false);
         userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void bulkDeactivateUsers(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) return;
+        List<User> users = userRepository.findAllById(userIds);
+        for (User user : users) {
+            if (!Boolean.TRUE.equals(user.getIsDeleted())) {
+                user.setIsActive(false);
+            }
+        }
+        userRepository.saveAll(users);
     }
 
     @Override

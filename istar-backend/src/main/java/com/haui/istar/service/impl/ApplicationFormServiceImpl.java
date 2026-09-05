@@ -56,7 +56,6 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
                 .school(request.getSchool())
                 .majorClass(request.getMajorClass())
                 .course(request.getCourse())
-                .reasonDepartment(request.getReasonDepartment())
                 .knowIStar(request.getKnowIStar())
                 .reasonIStarer(request.getReasonIStarer())
                 .recruitment(recruitment)
@@ -82,7 +81,6 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
                 .majorClass(saved.getMajorClass())
                 .course(saved.getCourse())
                 .avatarUrl(saved.getAvatarUrl())
-                .cvUrl(saved.getCvUrl())
                 .build();
     }
 
@@ -100,14 +98,10 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
         entity.setSchool(request.getSchool());
         entity.setMajorClass(request.getMajorClass());
         entity.setCourse(request.getCourse());
-        entity.setReasonDepartment(request.getReasonDepartment());
         entity.setKnowIStar(request.getKnowIStar());
         entity.setReasonIStarer(request.getReasonIStarer());
         if (request.getAvatarUrl() != null) {
             entity.setAvatarUrl(request.getAvatarUrl());
-        }
-        if (request.getCvUrl() != null) {
-            entity.setCvUrl(request.getCvUrl());
         }
 
         // Cập nhật department (trong phase 3)
@@ -138,7 +132,6 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
                 .majorClass(entity.getMajorClass())
                 .course(entity.getCourse())
                 .avatarUrl(entity.getAvatarUrl())
-                .cvUrl(entity.getCvUrl())
                 .build();
     }
 
@@ -173,23 +166,6 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
             return url;
         } catch (IOException e) {
             throw new RuntimeException("Lỗi lưu file ảnh đại diện: " + e.getMessage());
-        }
-    }
-
-    @Override
-    @Transactional
-    public String uploadCv(Long id, MultipartFile file) {
-        FileUploadUtil.validateCv(file);
-        Application form = repository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ứng viên với id: " + id));
-
-        try {
-            String url = FileUploadUtil.saveFile(uploadDir, file);
-            form.setCvUrl(url);
-            repository.save(form);
-            return url;
-        } catch (IOException e) {
-            throw new RuntimeException("Lỗi lưu file CV: " + e.getMessage());
         }
     }
 }

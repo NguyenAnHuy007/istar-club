@@ -2,15 +2,18 @@
 -- Run this script to apply constraints
 
 -- 1. Ensure only one active PRESIDENT
--- This uses a partial unique index. Only works if is_active is true.
+-- This uses a partial unique index. Only works if is_deleted is false and is_active is true.
+DROP INDEX IF EXISTS idx_unique_active_president;
 CREATE UNIQUE INDEX idx_unique_active_president
 ON users (position)
-WHERE position = 'PRESIDENT' AND is_active = true;
+WHERE position = 'PRESIDENT' AND is_deleted = false AND is_active = true;
 
 -- 2. Ensure only one active DEPARTMENT_HEAD per Department
+-- Note: 'department' and 'position' for department heads are stored in 'user_departments' table
+DROP INDEX IF EXISTS idx_unique_active_department_head;
 CREATE UNIQUE INDEX idx_unique_active_department_head
-ON users (department)
-WHERE position = 'DEPARTMENT_HEAD' AND is_active = true;
+ON user_departments (department)
+WHERE position = 'DEPARTMENT_HEAD';
 
 -- 3. Advanced Constraints using Limits (Max 2 VICE_PRESIDENT, Max 3 AREA_MANAGER)
 -- Since UNIQUE constraints cannot enforce limits > 1, we use a Trigger function.
@@ -21,14 +24,15 @@ DECLARE
     vice_president_count INTEGER;
     area_manager_count INTEGER;
 BEGIN
-    -- Only check if the user is Active
-    IF NEW.is_active = true THEN
+    -- Only check if the user is Active and Not Deleted
+    IF NEW.is_deleted = false AND NEW.is_active = true THEN
 
         -- Check Rule: Max 2 VICE_PRESIDENT
         IF NEW.position = 'VICE_PRESIDENT' THEN
             SELECT COUNT(*) INTO vice_president_count
             FROM users
             WHERE position = 'VICE_PRESIDENT'
+              AND is_deleted = false
               AND is_active = true
               AND id != COALESCE(NEW.id, -1); -- Exclude current user in case of update
 
@@ -42,6 +46,7 @@ BEGIN
             SELECT COUNT(*) INTO area_manager_count
             FROM users
             WHERE position = 'AREA_MANAGER'
+              AND is_deleted = false
               AND is_active = true
               AND id != COALESCE(NEW.id, -1);
 

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.QueryHints;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import jakarta.persistence.QueryHint;
@@ -19,6 +20,9 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
     Optional<User> findByUsernameAndIsDeletedFalse(String username);
+
+    @Query("SELECT u FROM User u WHERE (u.username = :keyword OR u.email = :keyword) AND u.isDeleted = false")
+    Optional<User> findByUsernameOrEmailAndIsDeletedFalse(@Param("keyword") String keyword);
 
     boolean existsByUsername(String username);
 
@@ -41,12 +45,12 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
-    @Query("SELECT COUNT(u) FROM User u WHERE u.position = :position AND u.department = :department AND u.isDeleted = false")
+    @Query("SELECT COUNT(ud) FROM UserDepartment ud JOIN ud.user u WHERE ud.position = :position AND ud.department = :department AND u.isDeleted = false")
     long countByPositionAndDepartmentForUpdate(Position position, Department department);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
-    @Query("SELECT COUNT(u) FROM User u WHERE u.position = :position AND u.department = :department AND u.id <> :excludeId AND u.isDeleted = false")
+    @Query("SELECT COUNT(ud) FROM UserDepartment ud JOIN ud.user u WHERE ud.position = :position AND ud.department = :department AND u.id <> :excludeId AND u.isDeleted = false")
     long countByPositionAndDepartmentExcludingForUpdate(Position position, Department department, Long excludeId);
 
     @Query("SELECT DISTINCT u.course FROM User u WHERE u.course IS NOT NULL AND u.isDeleted = false ORDER BY u.course DESC")

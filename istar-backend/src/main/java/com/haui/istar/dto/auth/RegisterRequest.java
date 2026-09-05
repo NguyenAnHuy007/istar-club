@@ -1,7 +1,6 @@
 package com.haui.istar.dto.auth;
 
-import com.haui.istar.model.enums.Department;
-import com.haui.istar.model.enums.School;
+import com.haui.istar.dto.user.UserDepartmentRequest;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -11,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -38,9 +38,9 @@ public class RegisterRequest {
 
     private String address;
 
-    private java.util.List<com.haui.istar.dto.user.UserDepartmentRequest> userDepartments;
+    private List<UserDepartmentRequest> userDepartments;
 
-    private School school;
+    private String school;
 
     private String majorClass;
 

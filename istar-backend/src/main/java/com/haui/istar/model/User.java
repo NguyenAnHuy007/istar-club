@@ -46,9 +46,8 @@ public class User {
     @Column(length = 255)
     private String address;
 
-    @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    private School school;
+    private String school;
 
     @Column(name = "major_class", length = 100)
     private String majorClass;

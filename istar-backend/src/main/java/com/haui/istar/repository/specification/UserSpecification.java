@@ -16,9 +16,7 @@ public class UserSpecification {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            if (criteria.getId() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("id"), criteria.getId()));
-            }
+
 
             if (criteria.getKeyword() != null && !criteria.getKeyword().isEmpty()) {
                 String keyword = "%" + criteria.getKeyword().toLowerCase() + "%";
@@ -53,11 +51,8 @@ public class UserSpecification {
                 predicates.add(criteriaBuilder.equal(root.get("isActive"), criteria.getIsActive()));
             }
 
-            if (criteria.getIsDeleted() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("isDeleted"), criteria.getIsDeleted()));
-            } else {
-                predicates.add(criteriaBuilder.equal(root.get("isDeleted"), false));
-            }
+            // Always exclude deleted users from search results
+            predicates.add(criteriaBuilder.equal(root.get("isDeleted"), false));
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };

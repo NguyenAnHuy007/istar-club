@@ -12,5 +12,4 @@ public interface ApplicationFormService {
     void deleteById(Long id);
     ByteArrayInputStream exportExcel();
     String uploadAvatar(Long id, MultipartFile file);
-    String uploadCv(Long id, MultipartFile file);
 }

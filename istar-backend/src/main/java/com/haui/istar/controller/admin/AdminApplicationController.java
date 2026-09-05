@@ -100,16 +100,6 @@ public class AdminApplicationController {
         return ResponseEntity.ok(ApiResponse.success("Tải lên ảnh đại diện thành công", url));
     }
 
-    @PostMapping("/{id}/upload-cv")
-    @PreAuthorize("hasAuthority('APPLICATION_EDIT')")
-    public ResponseEntity<ApiResponse<String>> uploadCv(
-            @PathVariable Long id,
-            @RequestParam("file") MultipartFile file
-    ) {
-        String url = adminApplicationService.uploadCv(id, file);
-        return ResponseEntity.ok(ApiResponse.success("Tải lên CV thành công", url));
-    }
-
     @PostMapping("/{id}/create-account")
     @PreAuthorize("hasAuthority('APPLICATION_CREATE_ACCOUNT')")
     public ResponseEntity<ApiResponse<Void>> createAccount(@PathVariable Long id) {

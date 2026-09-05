@@ -115,9 +115,6 @@ public class AdminApplicationServiceImpl implements AdminApplicationService {
         if (request.getCourse() != null) {
             application.setCourse(request.getCourse());
         }
-        if (request.getReasonDepartment() != null) {
-            application.setReasonDepartment(request.getReasonDepartment());
-        }
         if (request.getKnowIStar() != null) {
             application.setKnowIStar(request.getKnowIStar());
         }
@@ -126,9 +123,6 @@ public class AdminApplicationServiceImpl implements AdminApplicationService {
         }
         if (request.getAvatarUrl() != null) {
             application.setAvatarUrl(request.getAvatarUrl());
-        }
-        if (request.getCvUrl() != null) {
-            application.setCvUrl(request.getCvUrl());
         }
         if (request.getStatus() != null) {
             application.setStatus(request.getStatus());
@@ -210,27 +204,6 @@ public class AdminApplicationServiceImpl implements AdminApplicationService {
             return url;
         } catch (IOException e) {
             throw new RuntimeException("Lỗi lưu file ảnh đại diện: " + e.getMessage());
-        }
-    }
-
-    @Override
-    @Transactional
-    public String uploadCv(Long id, MultipartFile file) {
-        FileUploadUtil.validateCv(file);
-        Application form = applicationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ứng viên với id: " + id));
-
-        if (Boolean.TRUE.equals(form.getIsDeleted())) {
-            throw new BadRequestException("Không thể tải lên CV cho đơn đã bị xóa");
-        }
-
-        try {
-            String url = FileUploadUtil.saveFile(uploadDir, file);
-            form.setCvUrl(url);
-            applicationRepository.save(form);
-            return url;
-        } catch (IOException e) {
-            throw new RuntimeException("Lỗi lưu file CV: " + e.getMessage());
         }
     }
 
@@ -318,11 +291,9 @@ public class AdminApplicationServiceImpl implements AdminApplicationService {
                 .school(application.getSchool())
                 .majorClass(application.getMajorClass())
                 .course(application.getCourse())
-                .reasonDepartment(application.getReasonDepartment())
                 .knowIStar(application.getKnowIStar())
                 .reasonIStarer(application.getReasonIStarer())
                 .avatarUrl(application.getAvatarUrl())
-                .cvUrl(application.getCvUrl())
                 .status(application.getStatus())
                 .version(application.getVersion())
                 .createdAt(application.getCreatedAt())

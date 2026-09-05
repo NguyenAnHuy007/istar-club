@@ -34,9 +34,14 @@ Hệ thống chuẩn hóa gồm đúng 4 ban chính (loại bỏ hoàn toàn c�
   - `DEPARTMENT_HEAD` giới hạn tối đa 1 người / ban.
   - Một tài khoản có thể đảm nhiệm các chức danh khác nhau ở các ban khác nhau (ví dụ: Trưởng ban ở Sự kiện nhưng là Thành viên ở Âm nhạc).
 
-### 2.2. Cơ cấu Đa Ban (Multi-Department)
+### 2.2. Cơ cấu Đa Ban (Multi-Department) & Cơ chế Đồng bộ Ban (Reconciliation)
 - **1 User ↔ Nhiều Ban**: Mỗi thành viên (User) có thể tham gia nhiều ban khác nhau thông qua bảng trung gian `user_departments`.
 - **1 Đơn ↔ Nhiều Ban**: Mỗi ứng viên (Application) có thể nộp nguyện vọng vào nhiều ban khác nhau thông qua bảng `application_departments`.
+- **Cơ chế Đồng bộ Ban (`UserDepartment` Reconciliation)**: Bảng `user_departments` có ràng buộc duy nhất `(user_id, department)`. Khi cập nhật thông tin user, Hibernate `ActionQueue` ưu tiên thực thi các lệnh INSERT trước DELETE trong cùng phiên làm việc, nếu chỉ thực hiện `clear()` và thêm mới sẽ gây lỗi vi phạm khóa duy nhất (`duplicate key value violates unique constraint`). Hệ thống áp dụng cơ chế điều phối tập hợp tại chỗ (in-place reconciliation):
+  1. Xóa các ban cũ không còn trong yêu cầu (`removeIf` kích hoạt `orphanRemoval = true`).
+  2. Cập nhật `position` của các ban đang giữ nguyên (thực hiện lệnh UPDATE, không xóa bỏ thực thể cũ).
+  3. Chỉ INSERT các ban thực sự mới phát sinh.
+  Đảm bảo không bao giờ xảy ra lỗi trùng lặp khóa duy nhất trên cơ sở dữ liệu.
 
 ### 2.3. Quy trình Tuyển ứng viên (Application Flow)
 Mỗi đợt tuyển sinh (Recruitment) được quản lý với thời gian bắt đầu và kết thúc (`startDate`, `endDate`, `isActive`). Hệ thống tự động gán đơn đăng ký mới vào đợt tuyển đang mở.
@@ -85,18 +90,22 @@ erDiagram
 - **`applications`**: Chứa thông tin ứng viên (họ tên, email không bắt buộc phải duy nhất, trường lớp) và liên kết tới `recruitment_id`.
 - **`application_departments`**: Bảng trung gian nguyện vọng của ứng viên. Lưu trạng thái (`status`), `interviewScore` (điểm phỏng vấn), `interviewNotes` (ghi chú), và liên kết tới người phỏng vấn (`interviewer_id`).
 
+### 3.3. Bảng Danh mục dùng chung (Master Data / Common Code)
+- **`common_codes`**: Quản lý danh mục cấu hình động (ví dụ: Trường/Khoa `SCHOOL`, Ngành học `MAJOR`...), gồm `category`, `code`, `name`, `description`, `order_index`, `is_active`. Cho phép Admin thêm/sửa/ẩn trường học mà không cần deploy lại code.
+
 ---
 
 ## 4. Danh Sách API Endpoints
 
-### 4.1. Xác thực & Public (`/api/auth`)
-- `POST /api/auth/register`: Đăng ký thành viên mới.
-- `POST /api/auth/login`: Đăng nhập, trả về JWT Token.
+### 4.1. Xác thực & Public (`/api/auth`, `/api/public`)
+- `POST /api/auth/register`: Đăng ký thành viên mới (hỗ trợ `username` duy nhất).
+- `POST /api/auth/login`: Đăng nhập, trả về JWT Token. Hỗ trợ truyền vào `username` là **Tên đăng nhập** HOẶC **Email** cá nhân (`CustomUserDetailsService` + `findByUsernameOrEmailAndIsDeletedFalse`).
+- *Cấu hình Seeder*: Tự động khởi tạo tài khoản Quản trị viên mặc định (`admin` / `admin@istar.club` / `admin123`) với vai trò `ADMIN` và nhóm quyền `ADMIN` nếu hệ thống chưa có.
 - `POST /api/auth/applications`: Nộp đơn ứng tuyển online (tự gán đợt tuyển đang active).
 - `PUT /api/auth/applications/{id}`: Cập nhật đơn ứng tuyển.
 - `DELETE /api/auth/applications/{id}`: Xóa đơn ứng tuyển (Soft delete).
 - `POST /api/auth/applications/{id}/upload-avatar`: Tải lên ảnh thẻ ứng viên.
-- `POST /api/auth/applications/{id}/upload-cv`: Tải lên hồ sơ/CV.
+- `GET /api/public/common-codes?category=SCHOOL`: Lấy danh sách các trường đang hoạt động để đổ dropdown trên giao diện.
 
 ### 4.2. Cá nhân người dùng (`/api/users`) — *Authenticated*
 - `GET /api/users/me`: Xem hồ sơ cá nhân (kèm danh sách `userDepartments`).
@@ -106,7 +115,20 @@ erDiagram
 ### 4.3. Quản trị hệ thống (`/api/admin`)
 Yêu cầu các quyền (Permission) tương ứng cho từng hành động.
 
-- **Thành viên (`/api/admin/users`)**: Search/Filter theo ban, chức vụ, khóa học; Cập nhật thông tin; Kích hoạt / Khóa tài khoản; Xóa mềm.
+- **Danh mục mã cấu hình (`/api/admin/common-codes`)**: Xem danh sách, tạo mới, sửa thông tin, bật/tắt kích hoạt, xóa mã danh mục.
+- **Thành viên (`/api/admin/users`)**:
+  - `GET /api/admin/users`: Lấy danh sách tất cả user phân trang (`page`, `size`).
+  - `POST /api/admin/users/search`: Tìm kiếm user nâng cao theo từ khóa, ban, chức vụ, khóa, trạng thái (`UserSearchCriteria`).
+  - `GET /api/admin/users/{id}`: Xem chi tiết thông tin user.
+  - `PUT /api/admin/users/{id}`: Cập nhật thông tin user (thông tin cá nhân, vai trò, chức vụ, cơ sở, và danh sách ban tham gia `userDepartments`).
+  - `DELETE /api/admin/users/{id}`: Xóa mềm user đơn lẻ (`isDeleted = true`). Quyền: `PERM_USER_DELETE`.
+  - `PUT /api/admin/users/{id}/deactivate`: Vô hiệu hóa tài khoản user đơn lẻ (`isActive = false`). Quyền: `PERM_USER_EDIT`.
+  - `PUT /api/admin/users/{id}/activate`: Kích hoạt lại tài khoản user đơn lẻ (`isActive = true`). Quyền: `PERM_USER_EDIT`.
+  - `PUT /api/admin/users/bulk-deactivate`: **[MỚI]** Vô hiệu hóa hàng loạt tài khoản người dùng (`isActive = false`) theo danh sách `userIds` (`BulkUserActionRequest`). Quyền: `PERM_USER_EDIT`. Tương thích với thanh thao tác hàng loạt phía Next.js frontend.
+  - `POST /api/admin/users/bulk-delete`: **[MỚI]** Xóa mềm hàng loạt tài khoản người dùng (`isDeleted = true`) theo danh sách `userIds` (`BulkUserActionRequest`). Quyền: `PERM_USER_DELETE`. Tương thích với thanh thao tác hàng loạt phía Next.js frontend.
+  - `GET /api/admin/users/filters/positions`: Lấy danh mục Position để đổ dropdown bộ lọc.
+  - `GET /api/admin/users/filters/departments`: Lấy danh mục 4 ban chính (`MUSIC`, `RAP`, `MEDIA_AND_EVENT`, `DANCE`) để đổ dropdown bộ lọc.
+  - `GET /api/admin/users/filters/courses`: Lấy danh sách các khóa thực tế có trong CSDL phục vụ bộ lọc.
 - **Thế hệ (`/api/admin/generations`)**: CRUD thông tin Gen CLB.
 - **Đợt tuyển (`/api/admin/recruitments`)**: CRUD Recruitment, Đóng / Mở đợt tuyển (chỉ 1 đợt active tại 1 thời điểm).
 - **Tuyển sinh / Xét duyệt (`/api/admin/applications`)**: 

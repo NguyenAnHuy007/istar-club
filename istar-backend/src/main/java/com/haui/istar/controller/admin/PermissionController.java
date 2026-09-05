@@ -3,8 +3,6 @@ package com.haui.istar.controller.admin;
 import com.haui.istar.dto.common.ApiResponse;
 import com.haui.istar.model.Permission;
 import com.haui.istar.model.PermissionGroup;
-import com.haui.istar.repository.PermissionGroupRepository;
-import com.haui.istar.repository.PermissionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,13 +23,15 @@ public class PermissionController {
     @GetMapping("/permissions")
     @PreAuthorize("hasAuthority('PERM_USER_MANAGE_PERMISSIONS')")
     public ResponseEntity<ApiResponse<List<Permission>>> getAllPermissions() {
-        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách quyền thành công", permissionService.getAllPermissions()));
+        return ResponseEntity
+                .ok(ApiResponse.success("Lấy danh sách quyền thành công", permissionService.getAllPermissions()));
     }
 
     @GetMapping("/permission-groups")
     @PreAuthorize("hasAuthority('PERM_USER_MANAGE_PERMISSIONS')")
     public ResponseEntity<ApiResponse<List<PermissionGroup>>> getAllPermissionGroups() {
-        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách nhóm quyền thành công", permissionService.getAllPermissionGroups()));
+        return ResponseEntity.ok(
+                ApiResponse.success("Lấy danh sách nhóm quyền thành công", permissionService.getAllPermissionGroups()));
     }
 
     @PostMapping("/users/{userId}/permissions")

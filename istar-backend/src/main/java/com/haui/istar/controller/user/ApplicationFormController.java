@@ -46,13 +46,4 @@ public class ApplicationFormController {
         String url = applicationFormService.uploadAvatar(id, file);
         return ResponseEntity.ok(ApiResponse.success("Tải lên ảnh đại diện thành công!", url));
     }
-
-    @PostMapping("/{id}/upload-cv")
-    public ResponseEntity<ApiResponse<String>> uploadCv(
-            @PathVariable Long id,
-            @RequestParam("file") MultipartFile file
-    ) {
-        String url = applicationFormService.uploadCv(id, file);
-        return ResponseEntity.ok(ApiResponse.success("Tải lên CV thành công!", url));
-    }
 }
