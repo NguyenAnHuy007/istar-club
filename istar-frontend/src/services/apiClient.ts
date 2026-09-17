@@ -24,7 +24,7 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Xử lý lỗi 401 tập trung (nếu token hết hạn, xóa phiên)
+// Xử lý lỗi 401 tập trung (nếu token hết hạn, xóa phiên và chuyển về /login với cảnh báo)
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -34,6 +34,12 @@ apiClient.interceptors.response.use(
       if (!requestUrl.includes("/api/auth/login")) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+
+        const currentPath = window.location.pathname;
+        if (!currentPath.startsWith("/login") && !currentPath.startsWith("/register")) {
+          const redirectQuery = encodeURIComponent(currentPath + window.location.search);
+          window.location.href = `/login?expired=true&redirect=${redirectQuery}`;
+        }
       }
     }
     return Promise.reject(error);

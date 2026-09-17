@@ -2,8 +2,9 @@
 
 import { useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, useInView } from "framer-motion";
-import { Star, Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 
 function FacebookIcon({ className }: { className?: string }) {
   return (
@@ -62,8 +63,14 @@ export default function Footer() {
           {/* Brand Column */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2.5 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#255798] to-[#4d8ee8] flex items-center justify-center shadow-[0_0_20px_rgba(37,87,152,0.35)]">
-                <Star className="w-4 h-4 text-white fill-white" />
+              <div className="relative w-8 h-8 rounded-lg overflow-hidden shadow-[0_0_20px_rgba(37,87,152,0.35)] shrink-0">
+                <Image
+                  src="/logo.png"
+                  alt="iStar Club Logo"
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <span className="text-lg font-semibold tracking-tight text-[#EDEDEF]">
                 iStar

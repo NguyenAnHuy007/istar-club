@@ -22,18 +22,26 @@ public class UserValidator {
      * Validate tất cả ràng buộc nghiệp vụ
      */
     public void validateUser(User user, Long excludeUserId) {
+        if (user == null) {
+            return;
+        }
         validatePositionLimit(user, excludeUserId);
         validateAreaConstraint(user);
-        
+
         if (user.getUserDepartments() != null) {
             for (UserDepartment ud : user.getUserDepartments()) {
-                validateDepartmentHeadLimit(ud, excludeUserId);
-                validateAreaConstraintForDepartment(user, ud);
+                if (ud != null) {
+                    validateDepartmentHeadLimit(ud, excludeUserId);
+                    validateAreaConstraintForDepartment(user, ud);
+                }
             }
         }
     }
 
     public void validatePositionLimit(User user, Long excludeUserId) {
+        if (user.getPosition() == null) {
+            return;
+        }
         switch (user.getPosition()) {
             case PRESIDENT:
                 long presidentCount = excludeUserId != null
@@ -71,14 +79,24 @@ public class UserValidator {
     }
 
     public void validateDepartmentHeadLimit(UserDepartment ud, Long excludeUserId) {
+        if (ud == null || ud.getPosition() == null || ud.getDepartment() == null) {
+            return;
+        }
         if (ud.getPosition() == Position.DEPARTMENT_HEAD) {
-            // Cần tạo method trong repository để đếm số lượng trưởng ban của 1 ban
-            // Tạm thời bỏ qua pessimistic lock cho department head ở đây hoặc implement trong service
-            // Ở đây tôi sẽ không dùng lock vì repository chưa có.
+            long headCount = excludeUserId != null
+                ? userRepository.countByPositionAndDepartmentExcludingForUpdate(Position.DEPARTMENT_HEAD, ud.getDepartment(), excludeUserId)
+                : userRepository.countByPositionAndDepartmentForUpdate(Position.DEPARTMENT_HEAD, ud.getDepartment());
+
+            if (headCount >= 1) {
+                throw new BadRequestException("Ban " + ud.getDepartment().getDisplayName() + " đã có trưởng ban!");
+            }
         }
     }
 
     public void validateAreaConstraint(User user) {
+        if (user.getArea() == null || user.getPosition() == null) {
+            return;
+        }
         if (user.getArea() == Area.NINH_BINH) {
             if (user.getPosition() == Position.PRESIDENT || user.getPosition() == Position.VICE_PRESIDENT) {
                 throw new BadRequestException("Thành viên ở Ninh Bình không thể là Chủ nhiệm/Phó chủ nhiệm");
@@ -91,7 +109,7 @@ public class UserValidator {
     }
 
     public void validateAreaConstraintForDepartment(User user, UserDepartment ud) {
-        if (user.getArea() == Area.NINH_BINH && ud.getPosition() == Position.DEPARTMENT_HEAD) {
+        if (user.getArea() == Area.NINH_BINH && ud != null && ud.getPosition() == Position.DEPARTMENT_HEAD) {
             throw new BadRequestException("Thành viên ở Ninh Bình không thể là Trưởng ban");
         }
     }

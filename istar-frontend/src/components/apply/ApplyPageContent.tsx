@@ -1,12 +1,41 @@
 "use client";
 
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, useEffect, FormEvent, ChangeEvent } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, ArrowLeft, Send, Sparkles, CheckCircle2, Loader2 } from "lucide-react";
-import AvatarUploader from "./AvatarUploader";
+import Image from "next/image";
+import {
+  ArrowLeft,
+  Send,
+  CheckCircle2,
+  Loader2,
+  CalendarX2,
+  AlertCircle,
+  ExternalLink,
+  User,
+  GraduationCap,
+  Compass,
+  HelpCircle,
+  MapPin,
+  CalendarRange,
+} from "lucide-react";
+import { Facebook } from "@/components/common/Icons";
+import { isAxiosError } from "axios";
 import DepartmentPicker from "./DepartmentPicker";
-import { ApplicationFormData, DepartmentCode } from "@/types/application";
+import SelectWithOther, {
+  SelectOption,
+} from "@/components/common/SelectWithOther";
+import FilterDatePicker from "@/components/admin/common/FilterDatePicker";
+import commonCodeService from "@/services/commonCodeService";
+import publicRecruitmentService from "@/services/publicRecruitmentService";
+import publicApplicationService from "@/services/publicApplicationService";
+import {
+  ApplicationFormData,
+  DepartmentCode,
+  ApplicationFormRequest,
+} from "@/types/application";
+import { Department, Area } from "@/types/user";
+import { RecruitmentDto } from "@/types/recruitment";
 import { HAUI_SCHOOLS } from "@/constants/schools";
 
 const initialForm: ApplicationFormData = {
@@ -16,20 +45,85 @@ const initialForm: ApplicationFormData = {
   birthday: "",
   phoneNumber: "",
   address: "",
+  facebookUrl: "",
   school: "",
   majorClass: "",
   course: "",
+  area: Area.NINH_BINH,
   departments: [],
   knowIStar: "",
   reasonIStarer: "",
-  avatarFile: null,
 };
 
 export default function ApplyPageContent() {
   const [formData, setFormData] = useState<ApplicationFormData>(initialForm);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [deptError, setDeptError] = useState(false);
+
+  // Trạng thái đợt tuyển active
+  const [activeRecruitment, setActiveRecruitment] =
+    useState<RecruitmentDto | null>(null);
+  const [isLoadingRecruitment, setIsLoadingRecruitment] = useState(true);
+
+  // Danh mục trường học và khóa học từ API
+  const [schoolOptions, setSchoolOptions] = useState<SelectOption[]>(
+    HAUI_SCHOOLS.map((s) => ({ value: s, label: s }))
+  );
+  const [courseOptions, setCourseOptions] = useState<SelectOption[]>(
+    ["K21", "K20", "K19", "K18"].map((c) => ({
+      value: c,
+      label: c,
+    }))
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchInitData = async () => {
+      try {
+        const [recruitment, schools, courses] = await Promise.all([
+          publicRecruitmentService.getActiveRecruitment().catch(() => null),
+          commonCodeService.getSchools().catch(() => null),
+          commonCodeService.getRecentCourses(4).catch(() => null),
+        ]);
+
+        if (isMounted) {
+          setActiveRecruitment(recruitment);
+
+          if (schools && schools.length > 0) {
+            setSchoolOptions(
+              schools.map((item) => ({
+                value: item.name,
+                label: item.name,
+              }))
+            );
+          }
+
+          if (courses && courses.length > 0) {
+            setCourseOptions(
+              courses.map((item) => ({
+                value: item.code,
+                label: item.code || item.name,
+              }))
+            );
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi khi tải dữ liệu khởi tạo trang nộp đơn:", err);
+      } finally {
+        if (isMounted) {
+          setIsLoadingRecruitment(false);
+        }
+      }
+    };
+
+    fetchInitData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -45,10 +139,6 @@ export default function ApplyPageContent() {
     }
   };
 
-  const handleAvatarChange = (file: File | null) => {
-    setFormData((prev) => ({ ...prev, avatarFile: file }));
-  };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -60,11 +150,38 @@ export default function ApplyPageContent() {
     }
 
     setIsSubmitting(true);
-    // Giả lập gửi form (sau này kết nối API /api/auth/applications)
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setSubmitError(null);
+
+    try {
+      const payload: ApplicationFormRequest = {
+        email: formData.email.trim(),
+        firstName: formData.firstName.trim() || undefined,
+        lastName: formData.lastName.trim() || undefined,
+        birthday: formData.birthday || undefined,
+        address: formData.address.trim() || undefined,
+        phoneNumber: formData.phoneNumber.trim(),
+        facebookUrl: formData.facebookUrl.trim() || undefined,
+        recruitmentId: activeRecruitment?.id,
+        area: formData.area || Area.NINH_BINH,
+        departments: formData.departments.map((d) => ({
+          department: d as unknown as Department,
+        })),
+        school: formData.school.trim() || undefined,
+        majorClass: formData.majorClass.trim() || undefined,
+        course: formData.course.trim() || undefined,
+        knowIStar: formData.knowIStar.trim(),
+        reasonIStarer: formData.reasonIStarer.trim(),
+      };
+
+      await publicApplicationService.submitApplication(payload);
       setSubmitted(true);
-    }, 1000);
+    } catch (err: unknown) {
+      console.error("Lỗi khi nộp đơn ứng tuyển:", err);
+      const msg = isAxiosError(err) ? err.response?.data?.message : null;
+      setSubmitError(msg || "Đã xảy ra lỗi khi nộp đơn. Vui lòng thử lại sau.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const fadeUp = (delay: number = 0) => ({
@@ -73,6 +190,94 @@ export default function ApplyPageContent() {
     transition: { duration: 0.6, delay, ease: [0.16, 1, 0.3, 1] as const },
   });
 
+  // 1. Loading State
+  if (isLoadingRecruitment) {
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center px-4">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-full border-2 border-white/10 border-t-[#255798] animate-spin" />
+          <p className="text-xs text-[#8A8F98] tracking-wider uppercase font-mono">
+            Đang kiểm tra đợt tuyển thành viên...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. No Active Recruitment State
+  if (!activeRecruitment) {
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center px-4 sm:px-6 py-12">
+        {/* Back to home */}
+        <motion.div {...fadeUp(0)} className="w-full max-w-xl mb-6">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm text-[#8A8F98] hover:text-[#EDEDEF] transition-colors duration-200"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Quay về trang chủ
+          </Link>
+        </motion.div>
+
+        {/* Closed Announcement Card */}
+        <motion.div
+          {...fadeUp(0.1)}
+          className="w-full max-w-xl p-8 sm:p-10 rounded-3xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-2xl shadow-[0_16px_48px_rgba(0,0,0,0.5)] text-center relative overflow-hidden"
+        >
+          {/* Subtle amber glow backdrop */}
+          <div className="absolute top-[-90px] left-1/2 -translate-x-1/2 w-64 h-64 bg-amber-500/10 blur-[100px] pointer-events-none rounded-full" />
+
+          {/* Icon */}
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-6 text-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+            <CalendarX2 className="w-8 h-8" />
+          </div>
+
+          <span className="inline-block px-3 py-1 text-[11px] font-mono tracking-widest uppercase rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-4">
+            Cổng đăng ký hiện đang đóng
+          </span>
+
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-3 tracking-tight">
+            Chưa có đợt tuyển thành viên nào đang mở
+          </h1>
+
+          <p className="text-sm text-[#8A8F98] leading-relaxed max-w-md mx-auto mb-8">
+            Câu lạc bộ Nghệ thuật iStar (HaUI) hiện chưa mở đợt nhận hồ sơ mới hoặc đợt tuyển gần nhất đã kết thúc thời hạn đăng ký. Bạn hãy theo dõi Fanpage chính thức của CLB để không bỏ lỡ thông tin tuyển chọn các Gen tiếp theo nhé!
+          </p>
+
+          {/* Action buttons */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
+            <Link
+              href="/"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-[#255798] rounded-xl hover:bg-[#316ebf] transition-all duration-200 shadow-[0_0_0_1px_rgba(37,87,152,0.5),0_4px_16px_rgba(37,87,152,0.3)] hover:-translate-y-0.5 active:scale-[0.98]"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Trở về trang chủ
+            </Link>
+
+            <a
+              href="https://www.facebook.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-[#8A8F98] hover:text-[#EDEDEF] rounded-xl border border-white/[0.08] hover:bg-white/[0.04] transition-all duration-200"
+            >
+              <span>Theo dõi Fanpage iStar</span>
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
+        </motion.div>
+
+        {/* Footer */}
+        <motion.p
+          {...fadeUp(0.3)}
+          className="text-xs text-[#8A8F98]/50 mt-8 text-center"
+        >
+          © 2026 iStar — Câu lạc bộ Nghệ thuật | Đại học Công nghiệp Hà Nội (HaUI)
+        </motion.p>
+      </div>
+    );
+  }
+
+  // 3. Active Recruitment: Render Application Form
   return (
     <div className="min-h-[100dvh] flex flex-col items-center px-4 sm:px-6 py-8 sm:py-12">
       {/* Back to home */}
@@ -107,9 +312,16 @@ export default function ApplyPageContent() {
               <h2 className="text-2xl sm:text-3xl font-bold gradient-text mb-3">
                 Nộp đơn ứng tuyển thành công!
               </h2>
+              <p className="text-sm text-[#8A8F98] max-w-md mx-auto mb-2 leading-relaxed">
+                Cảm ơn bạn đã gửi hồ sơ tham gia đợt tuyển{" "}
+                <strong className="text-[#EDEDEF]">
+                  {activeRecruitment.name}
+                </strong>
+                .
+              </p>
               <p className="text-sm text-[#8A8F98] max-w-md mx-auto mb-8 leading-relaxed">
-                Cảm ơn bạn đã gửi hồ sơ gia nhập đại gia đình iStar. Ban Chủ nhiệm
-                sẽ xem xét đơn ứng tuyển và liên hệ qua email/số điện thoại của bạn trong thời gian sớm nhất!
+                Ban Chủ nhiệm sẽ sớm xem xét hồ sơ và liên hệ với bạn qua
+                email hoặc số điện thoại để thông báo lịch phỏng vấn!
               </p>
               <div className="flex flex-col sm:flex-row items-center gap-3">
                 <Link
@@ -135,11 +347,32 @@ export default function ApplyPageContent() {
             <div key="form-screen">
               {/* Header */}
               <div className="text-center mb-8">
-                <motion.div {...fadeUp(0.15)} className="flex justify-center mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#255798] to-[#4d8ee8] flex items-center justify-center shadow-[0_0_30px_rgba(37,87,152,0.4)]">
-                    <Star className="w-6 h-6 text-white fill-white" />
+                <motion.div
+                  {...fadeUp(0.15)}
+                  className="flex justify-center mb-4"
+                >
+                  <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(37,87,152,0.4)]">
+                    <Image
+                      src="/logo.png"
+                      alt="iStar Club Logo"
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-cover"
+                      priority
+                    />
                   </div>
                 </motion.div>
+
+                {/* Active Campaign Badge */}
+                <motion.div {...fadeUp(0.18)} className="mb-3">
+                  <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#255798]/15 border border-[#255798]/30 text-[#4d8ee8] text-xs font-medium shadow-[0_0_20px_rgba(37,87,152,0.15)]">
+                    <span className="w-2 h-2 rounded-full bg-[#4d8ee8] animate-pulse" />
+                    <span>
+                      Đang mở: <strong>{activeRecruitment.name}</strong>
+                    </span>
+                  </span>
+                </motion.div>
+
                 <motion.h1
                   {...fadeUp(0.2)}
                   className="text-2xl sm:text-3xl font-bold gradient-text mb-2"
@@ -147,15 +380,40 @@ export default function ApplyPageContent() {
                   Ứng tuyển thành viên iStar
                 </motion.h1>
                 <motion.p {...fadeUp(0.25)} className="text-sm text-[#8A8F98]">
-                  Điền đầy đủ thông tin bên dưới để nộp đơn ứng tuyển
+                  Điền đầy đủ thông tin bên dưới để nộp hồ sơ xét tuyển
                 </motion.p>
               </div>
+
+              {/* Campaign Description (Rich Text HTML Card) */}
+              {activeRecruitment.description && (
+                <motion.div
+                  {...fadeUp(0.28)}
+                  className="mb-8 p-5 sm:p-6 rounded-2xl bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.3)] text-left backdrop-blur-md"
+                >
+                  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/[0.06] text-xs font-semibold text-[#4d8ee8] uppercase tracking-wider">
+                    <CalendarRange className="w-4 h-4 text-[#4d8ee8]" />
+                    <span>Thông tin & Kế hoạch tuyển thành viên</span>
+                  </div>
+                  <div
+                    className="text-sm text-[#EDEDEF]/90 leading-relaxed rich-text-content"
+                    dangerouslySetInnerHTML={{ __html: activeRecruitment.description }}
+                  />
+                </motion.div>
+              )}
+
+              {/* Submit Error Banner */}
+              {submitError && (
+                <div className="mb-6 p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 text-sm flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                  <span>{submitError}</span>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* ===== 1. THÔNG TIN CÁ NHÂN ===== */}
                 <div className="space-y-4">
                   <div className="text-sm font-semibold text-[#EDEDEF] uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#255798]" />
+                    <User className="w-4 h-4 text-[#4d8ee8]" />
                     Thông tin cá nhân
                   </div>
 
@@ -178,21 +436,8 @@ export default function ApplyPageContent() {
                   {/* Name row */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="firstName" className="form-label">
-                        Họ đệm
-                      </label>
-                      <input
-                        id="firstName"
-                        type="text"
-                        value={formData.firstName}
-                        onChange={handleInputChange}
-                        className="form-input"
-                        placeholder="Nguyễn Văn"
-                      />
-                    </div>
-                    <div>
                       <label htmlFor="lastName" className="form-label">
-                        Tên <span className="required">*</span>
+                        Họ và tên đệm
                       </label>
                       <input
                         id="lastName"
@@ -200,30 +445,43 @@ export default function ApplyPageContent() {
                         value={formData.lastName}
                         onChange={handleInputChange}
                         className="form-input"
+                        placeholder="Nguyễn Văn"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="firstName" className="form-label">
+                        Tên
+                      </label>
+                      <input
+                        id="firstName"
+                        type="text"
+                        value={formData.firstName}
+                        onChange={handleInputChange}
+                        className="form-input"
                         placeholder="An"
-                        required
                       />
                     </div>
                   </div>
 
-                  {/* Birthday + Phone */}
+                  {/* Birthday & Phone */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="birthday" className="form-label">
                         Ngày sinh
                       </label>
-                      <input
+                      <FilterDatePicker
                         id="birthday"
-                        type="date"
                         value={formData.birthday}
-                        onChange={handleInputChange}
-                        style={{ colorScheme: "dark" }}
-                        className="form-input"
+                        onChange={(date) =>
+                          setFormData((prev) => ({ ...prev, birthday: date }))
+                        }
+                        placeholder="Chọn ngày sinh..."
+                        maxDate={new Date().toISOString().substring(0, 10)}
                       />
                     </div>
                     <div>
                       <label htmlFor="phoneNumber" className="form-label">
-                        Số điện thoại
+                        Số điện thoại <span className="required">*</span>
                       </label>
                       <input
                         id="phoneNumber"
@@ -231,7 +489,8 @@ export default function ApplyPageContent() {
                         value={formData.phoneNumber}
                         onChange={handleInputChange}
                         className="form-input"
-                        placeholder="0912 345 678"
+                        placeholder="0912345678"
+                        required
                       />
                     </div>
                   </div>
@@ -239,7 +498,7 @@ export default function ApplyPageContent() {
                   {/* Address */}
                   <div>
                     <label htmlFor="address" className="form-label">
-                      Địa chỉ / Quê quán
+                      Địa chỉ (Quê quán / Nơi ở hiện tại)
                     </label>
                     <input
                       id="address"
@@ -247,8 +506,26 @@ export default function ApplyPageContent() {
                       value={formData.address}
                       onChange={handleInputChange}
                       className="form-input"
-                      placeholder="Quê quán hoặc địa chỉ hiện tại"
+                      placeholder="Bắc Từ Liêm, Hà Nội"
                     />
+                  </div>
+
+                  {/* Link Facebook cá nhân */}
+                  <div>
+                    <label htmlFor="facebookUrl" className="form-label">
+                      Link Facebook cá nhân
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="facebookUrl"
+                        type="url"
+                        value={formData.facebookUrl}
+                        onChange={handleInputChange}
+                        className="form-input !pl-10"
+                        placeholder="https://facebook.com/username..."
+                      />
+                      <Facebook className="w-4 h-4 text-[#1877F2] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
                   </div>
                 </div>
 
@@ -258,29 +535,26 @@ export default function ApplyPageContent() {
                 {/* ===== 2. THÔNG TIN HỌC TẬP ===== */}
                 <div className="space-y-4">
                   <div className="text-sm font-semibold text-[#EDEDEF] uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#255798]" />
+                    <GraduationCap className="w-4 h-4 text-[#4d8ee8]" />
                     Thông tin học tập
                   </div>
 
-                  {/* School with Datalist */}
+                  {/* Trường / Khoa (Dropdown + Khác) */}
                   <div>
                     <label htmlFor="school" className="form-label">
                       Trường / Khoa
                     </label>
-                    <input
+                    <SelectWithOther
                       id="school"
-                      type="text"
-                      list="school-suggestions"
                       value={formData.school}
-                      onChange={handleInputChange}
-                      className="form-input"
-                      placeholder="Chọn hoặc nhập tên Trường / Khoa"
+                      onChange={(val) =>
+                        setFormData((prev) => ({ ...prev, school: val }))
+                      }
+                      options={schoolOptions}
+                      placeholder="-- Chọn Trường / Khoa --"
+                      otherLabel="Khác (Nhập trường/khoa khác)..."
+                      otherPlaceholder="Nhập tên Trường / Khoa của bạn..."
                     />
-                    <datalist id="school-suggestions">
-                      {HAUI_SCHOOLS.map((school) => (
-                        <option key={school} value={school} />
-                      ))}
-                    </datalist>
                   </div>
 
                   {/* Class + Course */}
@@ -302,13 +576,16 @@ export default function ApplyPageContent() {
                       <label htmlFor="course" className="form-label">
                         Khóa
                       </label>
-                      <input
+                      <SelectWithOther
                         id="course"
-                        type="text"
                         value={formData.course}
-                        onChange={handleInputChange}
-                        className="form-input"
-                        placeholder="K16, K17, K18..."
+                        onChange={(val) =>
+                          setFormData((prev) => ({ ...prev, course: val }))
+                        }
+                        options={courseOptions}
+                        placeholder="-- Chọn Khóa --"
+                        otherLabel="Khác (Nhập khóa khác)..."
+                        otherPlaceholder="Nhập khóa (VD: K22, Khóa 2025...)"
                       />
                     </div>
                   </div>
@@ -317,44 +594,155 @@ export default function ApplyPageContent() {
                 {/* Divider */}
                 <div className="section-divider" />
 
-                {/* ===== 3. THÔNG TIN ỨNG TUYỂN ===== */}
+                {/* ===== 3. ĐỊA ĐIỂM / CƠ SỞ PHỎNG VẤN ===== */}
+                <div className="space-y-4">
+                  <div className="text-sm font-semibold text-[#EDEDEF] uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#4d8ee8]" />
+                    Địa điểm phỏng vấn / Cơ sở <span className="required">*</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          area: Area.NINH_BINH,
+                        }))
+                      }
+                      className={`p-4 rounded-xl border text-left transition-all duration-200 flex items-center justify-between cursor-pointer ${
+                        formData.area === Area.NINH_BINH
+                          ? "bg-emerald-500/10 border-emerald-500/40 text-white shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/40"
+                          : "bg-white/[0.02] border-white/10 text-[#8A8F98] hover:border-white/20 hover:text-white"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-9 h-9 rounded-lg flex items-center justify-center border transition-colors ${
+                            formData.area === Area.NINH_BINH
+                              ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400"
+                              : "bg-white/[0.04] border-white/10 text-[#8A8F98]"
+                          }`}
+                        >
+                          <MapPin className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold text-[#EDEDEF]">
+                            Cơ sở 3 (Ninh Bình)
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
+                          formData.area === Area.NINH_BINH
+                            ? "border-emerald-500 bg-emerald-500"
+                            : "border-white/30 bg-transparent"
+                        }`}
+                      >
+                        {formData.area === Area.NINH_BINH && (
+                          <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                        )}
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          area: Area.HANOI,
+                        }))
+                      }
+                      className={`p-4 rounded-xl border text-left transition-all duration-200 flex items-center justify-between cursor-pointer ${
+                        formData.area === Area.HANOI
+                          ? "bg-[#255798]/20 border-[#255798]/60 text-white shadow-[0_0_20px_rgba(37,87,152,0.2)] ring-1 ring-[#255798]/60"
+                          : "bg-white/[0.02] border-white/10 text-[#8A8F98] hover:border-white/20 hover:text-white"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-9 h-9 rounded-lg flex items-center justify-center border transition-colors ${
+                            formData.area === Area.HANOI
+                              ? "bg-[#255798]/30 border-[#255798]/40 text-[#4d8ee8]"
+                              : "bg-white/[0.04] border-white/10 text-[#8A8F98]"
+                          }`}
+                        >
+                          <MapPin className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold text-[#EDEDEF]">
+                            Cơ sở 1 (Hà Nội)
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
+                          formData.area === Area.HANOI
+                            ? "border-[#4d8ee8] bg-[#4d8ee8]"
+                            : "border-white/30 bg-transparent"
+                        }`}
+                      >
+                        {formData.area === Area.HANOI && (
+                          <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                        )}
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="section-divider" />
+
+                {/* ===== 4. NGUYỆN VỌNG BAN ===== */}
                 <div id="dept-picker-section" className="space-y-4">
                   <div className="text-sm font-semibold text-[#EDEDEF] uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#255798]" />
-                    Thông tin ứng tuyển
+                    <Compass className="w-4 h-4 text-[#4d8ee8]" />
+                    Nguyện vọng tham gia <span className="required">*</span>
+                  </div>
+                  <p className="text-xs text-[#8A8F98] -mt-2 mb-3">
+                    Chọn ít nhất một ban bạn muốn ứng tuyển (có thể chọn nhiều
+                    ban)
+                  </p>
+
+                  <DepartmentPicker
+                    selected={formData.departments}
+                    onChange={handleDepartmentChange}
+                    hasError={deptError}
+                  />
+                </div>
+
+                {/* Divider */}
+                <div className="section-divider" />
+
+                {/* ===== 4. CÂU HỎI TÌM HIỂU ===== */}
+                <div className="space-y-4">
+                  <div className="text-sm font-semibold text-[#EDEDEF] uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <HelpCircle className="w-4 h-4 text-[#4d8ee8]" />
+                    Câu hỏi tìm hiểu
                   </div>
 
-                  {/* Department Checkboxes */}
-                  <div>
-                    <label className="form-label">
-                      Ban ứng tuyển <span className="required">*</span>
-                    </label>
-                    <DepartmentPicker
-                      selected={formData.departments}
-                      onChange={handleDepartmentChange}
-                      hasError={deptError}
-                    />
-                  </div>
-
-                  {/* Know iStar */}
+                  {/* knowIStar */}
                   <div>
                     <label htmlFor="knowIStar" className="form-label">
-                      Bạn biết đến iStar qua đâu? <span className="required">*</span>
+                      Bạn biết đến iStar qua kênh nào?{" "}
+                      <span className="required">*</span>
                     </label>
-                    <textarea
+                    <input
                       id="knowIStar"
+                      type="text"
                       value={formData.knowIStar}
                       onChange={handleInputChange}
                       className="form-input"
-                      placeholder="Mạng xã hội, bạn bè giới thiệu, sự kiện chào tân..."
+                      placeholder="VD: Fanpage iStar, Bạn bè giới thiệu, Buổi chào tân sinh viên..."
                       required
                     />
                   </div>
 
-                  {/* Reason */}
+                  {/* reasonIStarer */}
                   <div>
                     <label htmlFor="reasonIStarer" className="form-label">
-                      Lý do bạn muốn gia nhập iStar? <span className="required">*</span>
+                      Lý do bạn muốn trở thành một iStar-er?{" "}
+                      <span className="required">*</span>
                     </label>
                     <textarea
                       id="reasonIStarer"
@@ -366,11 +754,6 @@ export default function ApplyPageContent() {
                     />
                   </div>
 
-                  {/* Avatar Upload */}
-                  <div>
-                    <label className="form-label">Ảnh đại diện (Ảnh thẻ/chân dung)</label>
-                    <AvatarUploader onFileSelect={handleAvatarChange} />
-                  </div>
                 </div>
 
                 {/* Submit */}
@@ -378,12 +761,12 @@ export default function ApplyPageContent() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-medium text-white bg-[#255798] rounded-xl hover:bg-[#316ebf] transition-all duration-300 shadow-[0_0_0_1px_rgba(37,87,152,0.5),0_4px_16px_rgba(37,87,152,0.35),inset_0_1px_0_0_rgba(255,255,255,0.2)] hover:shadow-[0_0_0_1px_rgba(37,87,152,0.6),0_8px_32px_rgba(37,87,152,0.5),inset_0_1px_0_0_rgba(255,255,255,0.2)] hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-60 disabled:pointer-events-none"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-medium text-white bg-[#255798] rounded-xl hover:bg-[#316ebf] transition-all duration-300 shadow-[0_0_0_1px_rgba(37,87,152,0.5),0_4px_16px_rgba(37,87,152,0.35),inset_0_1px_0_0_rgba(255,255,255,0.2)] hover:shadow-[0_0_0_1px_rgba(37,87,152,0.6),0_8px_32px_rgba(37,87,152,0.5),inset_0_1px_0_0_rgba(255,255,255,0.2)] hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
                   >
                     {isSubmitting ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Đang gửi đơn...
+                        Đang gửi hồ sơ...
                       </>
                     ) : (
                       <>
@@ -400,8 +783,11 @@ export default function ApplyPageContent() {
       </motion.div>
 
       {/* Footer note */}
-      <motion.p {...fadeUp(0.5)} className="text-xs text-[#8A8F98]/50 mt-6 text-center">
-        © 2024 iStar — Câu lạc bộ Nghệ thuật | HaUI
+      <motion.p
+        {...fadeUp(0.5)}
+        className="text-xs text-[#8A8F98]/50 mt-6 text-center"
+      >
+        © 2026 iStar — Câu lạc bộ Nghệ thuật | Đại học Công nghiệp Hà Nội (HaUI)
       </motion.p>
     </div>
   );

@@ -20,6 +20,8 @@ public interface ApplicationRepository extends JpaRepository<Application, Long>,
 
     List<Application> findByIsDeletedFalse();
 
+    List<Application> findByRecruitmentIdAndIsDeletedFalse(Long recruitmentId);
+
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.data.jpa.repository.Query("UPDATE Application a SET a.status = :newStatus, a.updatedAt = CURRENT_TIMESTAMP WHERE a.id = :id AND a.status = :expectedStatus AND a.isDeleted = false")
     int updateStatusIfExpected(

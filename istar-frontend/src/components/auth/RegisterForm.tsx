@@ -4,8 +4,8 @@ import { useState, useEffect, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import {
-  Star,
   ArrowLeft,
   UserPlus,
   ShieldAlert,
@@ -16,14 +16,9 @@ import {
 import { RegisterFormData } from "@/types/auth";
 import { HAUI_SCHOOLS } from "@/constants/schools";
 import authService from "@/services/authService";
-import apiClient from "@/services/apiClient";
+import commonCodeService from "@/services/commonCodeService";
+import CustomSelect from "@/components/common/CustomSelect";
 import axios from "axios";
-
-interface CommonCodeItem {
-  id: number;
-  code: string;
-  name: string;
-}
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -34,8 +29,6 @@ export default function RegisterForm() {
     firstName: "",
     lastName: "",
     school: "",
-    majorClass: "",
-    course: "",
     password: "",
     confirmPassword: "",
   });
@@ -45,18 +38,16 @@ export default function RegisterForm() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Tải danh mục trường học từ backend (nếu có)
+  // Tải danh mục trường học từ backend
   useEffect(() => {
     const fetchSchools = async () => {
       try {
-        const res = await apiClient.get<{ success: boolean; data: CommonCodeItem[] }>(
-          "/api/public/common-codes?category=SCHOOL"
-        );
-        if (res.data.success && res.data.data?.length > 0) {
-          setSchools(res.data.data.map((item) => item.name));
+        const data = await commonCodeService.getSchools();
+        if (data && data.length > 0) {
+          setSchools(data.map((item) => item.name));
         }
       } catch {
-        // Sử dụng danh sách tĩnh mặc định nếu API lỗi
+        // Sử dụng danh sách tĩnh HAUI_SCHOOLS nếu API lỗi
       }
     };
     fetchSchools();
@@ -99,15 +90,13 @@ export default function RegisterForm() {
         firstName: formData.firstName.trim() || undefined,
         lastName: formData.lastName.trim() || undefined,
         school: formData.school.trim() || undefined,
-        majorClass: formData.majorClass.trim() || undefined,
-        course: formData.course.trim() || undefined,
       });
 
       setIsSuccess(true);
-      // Chờ 1.5 giây rồi điều hướng sang trang login
+      // Chờ 2.5 giây rồi điều hướng sang trang login với cờ pending_activation
       setTimeout(() => {
-        router.push(`/login?registered=true`);
-      }, 1500);
+        router.push(`/login?pending_activation=true`);
+      }, 2500);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const msg =
@@ -166,8 +155,15 @@ export default function RegisterForm() {
           {/* Header */}
           <div className="text-center mb-8">
             <motion.div {...fadeUp(0.15)} className="flex justify-center mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#255798] to-[#4d8ee8] flex items-center justify-center shadow-[0_0_30px_rgba(37,87,152,0.4)]">
-                <Star className="w-6 h-6 text-white fill-white" />
+              <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(37,87,152,0.4)]">
+                <Image
+                  src="/logo.png"
+                  alt="iStar Club Logo"
+                  width={48}
+                  height={48}
+                  className="w-full h-full object-cover"
+                  priority
+                />
               </div>
             </motion.div>
             <motion.h1
@@ -186,12 +182,15 @@ export default function RegisterForm() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mb-5 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex items-center gap-3"
+              className="mb-5 p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-sm flex items-start gap-3 shadow-[0_0_24px_rgba(245,158,11,0.1)]"
             >
-              <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-400" />
-              <div>
-                <p className="font-medium">Đăng ký thành công!</p>
-                <p className="text-xs text-emerald-400/80">
+              <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-400 mt-0.5" />
+              <div className="space-y-1 text-left">
+                <p className="font-semibold text-emerald-400">Đăng ký tài khoản thành công!</p>
+                <p className="text-xs text-amber-200/90 leading-relaxed">
+                  Tài khoản của bạn đã được tạo và đang ở trạng thái <strong>Chờ Quản trị viên kích hoạt</strong>. Bạn sẽ có thể đăng nhập sau khi được phê duyệt.
+                </p>
+                <p className="text-[11px] text-[#8A8F98] pt-1">
                   Đang chuyển hướng sang trang đăng nhập...
                 </p>
               </div>
@@ -292,64 +291,20 @@ export default function RegisterForm() {
               </div>
             </motion.div>
 
-            {/* School with datalist */}
+            {/* School with CustomSelect */}
             <motion.div {...fadeUp(0.34)}>
               <label htmlFor="school" className="form-label">
                 Trường / Khoa
               </label>
-              <input
-                id="school"
-                type="text"
-                list="school-list"
+              <CustomSelect
                 value={formData.school}
-                onChange={(e) =>
-                  setFormData({ ...formData, school: e.target.value })
+                onChange={(val) =>
+                  setFormData({ ...formData, school: val })
                 }
-                className="form-input"
-                placeholder="Chọn hoặc nhập tên Trường / Khoa"
+                options={schools.map((s) => ({ value: s, label: s }))}
+                placeholder="-- Chọn Trường / Khoa --"
                 disabled={isLoading || isSuccess}
               />
-              <datalist id="school-list">
-                {schools.map((s) => (
-                  <option key={s} value={s} />
-                ))}
-              </datalist>
-            </motion.div>
-
-            {/* Class + Course */}
-            <motion.div {...fadeUp(0.36)} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="majorClass" className="form-label">
-                  Lớp chuyên ngành
-                </label>
-                <input
-                  id="majorClass"
-                  type="text"
-                  value={formData.majorClass}
-                  onChange={(e) =>
-                    setFormData({ ...formData, majorClass: e.target.value })
-                  }
-                  className="form-input"
-                  placeholder="KTPM01"
-                  disabled={isLoading || isSuccess}
-                />
-              </div>
-              <div>
-                <label htmlFor="course" className="form-label">
-                  Khóa
-                </label>
-                <input
-                  id="course"
-                  type="text"
-                  value={formData.course}
-                  onChange={(e) =>
-                    setFormData({ ...formData, course: e.target.value })
-                  }
-                  className="form-input"
-                  placeholder="K16, K17..."
-                  disabled={isLoading || isSuccess}
-                />
-              </div>
             </motion.div>
 
             {/* Password */}

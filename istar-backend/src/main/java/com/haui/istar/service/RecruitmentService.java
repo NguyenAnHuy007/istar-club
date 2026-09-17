@@ -9,6 +9,7 @@ public interface RecruitmentService {
     RecruitmentDto getRecruitmentById(Long id);
     RecruitmentDto createRecruitment(CreateRecruitmentRequest request);
     RecruitmentDto updateRecruitment(Long id, CreateRecruitmentRequest request);
+    void activateRecruitment(Long id);
     void closeRecruitment(Long id);
     void softDeleteRecruitment(Long id);
     RecruitmentDto getActiveRecruitment();

@@ -62,11 +62,11 @@ export default function CustomSelect({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl text-sm transition-all duration-200 border outline-none ${
+        className={`form-input w-full flex items-center justify-between gap-2 text-left cursor-pointer transition-all duration-200 ${
           isOpen
-            ? "bg-[#0c0c14] border-[#4d8ee8] shadow-[0_0_0_1px_rgba(77,142,232,0.35),0_4px_16px_rgba(37,87,152,0.15)] text-[#EDEDEF]"
-            : "bg-black/40 hover:bg-white/[0.04] border-white/[0.1] hover:border-white/[0.18] text-[#EDEDEF]"
-        } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+            ? "!border-[#255798] !shadow-[0_0_0_3px_rgba(37,87,152,0.2),0_0_20px_rgba(37,87,152,0.15)] !bg-[#0c0c14]"
+            : "hover:border-white/[0.15]"
+        } ${disabled ? "opacity-50 !cursor-not-allowed" : ""}`}
       >
         <span
           className={`truncate text-left ${

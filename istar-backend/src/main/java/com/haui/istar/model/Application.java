@@ -1,6 +1,7 @@
 package com.haui.istar.model;
 
 import com.haui.istar.model.enums.ApplicationStatus;
+import com.haui.istar.model.enums.Area;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -65,6 +66,9 @@ public class Application {
     @Column(nullable = false, length = 1000)
     private String reasonIStarer;
 
+    @Column(name = "facebook_url", length = 255)
+    private String facebookUrl;
+
     @Column(length = 500)
     private String avatarUrl;
 
@@ -72,6 +76,11 @@ public class Application {
     @Column(nullable = false, length = 20)
     @Builder.Default
     private ApplicationStatus status = ApplicationStatus.SUBMITTED;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    @Builder.Default
+    private Area area = Area.NINH_BINH;
 
     @Column(name = "is_deleted", nullable = false)
     @Builder.Default
@@ -84,6 +93,12 @@ public class Application {
     @LastModifiedDate
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "checked_in_at")
+    private LocalDateTime checkedInAt;
+
+    @Column(name = "interviewed_at")
+    private LocalDateTime interviewedAt;
 
     @Version
     private Long version;

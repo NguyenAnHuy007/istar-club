@@ -3,6 +3,8 @@ package com.haui.istar.dto.application;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.haui.istar.model.enums.Area;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,5 +39,13 @@ public class ApplicationFormResponse {
 
     private String course;
 
+    private String facebookUrl;
+
     private String avatarUrl;
+
+    private Long recruitmentId;
+
+    private String recruitmentName;
+
+    private Area area;
 }

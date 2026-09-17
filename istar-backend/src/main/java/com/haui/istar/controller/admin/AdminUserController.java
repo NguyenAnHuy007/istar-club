@@ -34,9 +34,10 @@ public class AdminUserController {
     @PreAuthorize("hasAuthority('PERM_USER_VIEW')")
     public ResponseEntity<ApiResponse<Page<UserDto>>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "9999999") int size
+            @RequestParam(defaultValue = "100") int size
     ) {
-        Page<UserDto> users = adminUserService.getAllUsers(page, size);
+        int safeSize = Math.min(Math.max(1, size), 500);
+        Page<UserDto> users = adminUserService.getAllUsers(page, safeSize);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách người dùng thành công", users));
     }
 
@@ -74,8 +75,11 @@ public class AdminUserController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request
     ) {
-        if (request.getUsername() != null && !request.getUsername().isEmpty()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Không được sửa username"));
+        if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
+            UserDto existingUser = adminUserService.getUserById(id);
+            if (!request.getUsername().trim().equalsIgnoreCase(existingUser.getUsername())) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Không được sửa username"));
+            }
         }
 
         UserDto updatedUser = adminUserService.updateUser(id, request);

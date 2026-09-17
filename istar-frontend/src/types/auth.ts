@@ -1,4 +1,4 @@
-import { Role } from "./user";
+import { Role, UserDepartmentDto } from "./user";
 
 export interface LoginFormData {
   email: string; // Tên đăng nhập hoặc Email
@@ -11,8 +11,8 @@ export interface RegisterFormData {
   firstName: string;
   lastName: string;
   school: string;
-  majorClass: string;
-  course: string;
+  majorClass?: string;
+  course?: string;
   password: string;
   confirmPassword: string;
 }
@@ -28,7 +28,10 @@ export interface LoginResponseData {
   id: number;
   username: string;
   email: string;
-  role: Role;
+  role: Role | string;
+  roles?: string[];
+  permissions?: string[];
+  userDepartments?: UserDepartmentDto[];
 }
 
 export interface RegisterRequest {
@@ -48,6 +51,9 @@ export interface AuthUser {
   id: number;
   username: string;
   email: string;
-  role: Role;
+  role: Role | string;
+  roles?: string[];
+  permissions?: string[];
+  userDepartments?: UserDepartmentDto[];
 }
 

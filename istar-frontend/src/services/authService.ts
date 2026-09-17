@@ -26,6 +26,8 @@ export const authService = {
         username: data.username,
         email: data.email,
         role: data.role,
+        roles: data.roles || (data.role ? [String(data.role)] : ["MEMBER"]),
+        permissions: data.permissions || [],
       });
     }
     return data;
@@ -93,10 +95,58 @@ export const authService = {
   },
 
   /**
-   * Kiểm tra đã đăng nhập hay chưa
+   * Giải mã payload của token JWT an toàn (không cần thư viện bên ngoài)
+   */
+  decodeToken: (token?: string | null): { exp?: number; sub?: string; [key: string]: unknown } | null => {
+    const jwt = token !== undefined ? token : authService.getToken();
+    if (!jwt) return null;
+    try {
+      const parts = jwt.split(".");
+      if (parts.length !== 3) return null;
+      const base64Url = parts[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join("")
+      );
+      return JSON.parse(jsonPayload);
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Kiểm tra token đã hết hạn hay chưa
+   */
+  isTokenExpired: (token?: string | null): boolean => {
+    const jwt = token !== undefined ? token : authService.getToken();
+    if (!jwt) return true;
+    const decoded = authService.decodeToken(jwt);
+    if (!decoded || !decoded.exp) return false;
+    // exp tính bằng giây, so sánh với ms hiện tại
+    return decoded.exp * 1000 <= Date.now();
+  },
+
+  /**
+   * Lấy thời điểm token hết hạn tính theo ms timestamp
+   */
+  getTokenExpiryTime: (token?: string | null): number | null => {
+    const jwt = token !== undefined ? token : authService.getToken();
+    if (!jwt) return null;
+    const decoded = authService.decodeToken(jwt);
+    if (!decoded || !decoded.exp) return null;
+    return decoded.exp * 1000;
+  },
+
+  /**
+   * Kiểm tra đã đăng nhập và token còn hiệu lực hay không
    */
   isAuthenticated: (): boolean => {
-    return !!authService.getToken();
+    const token = authService.getToken();
+    if (!token) return false;
+    return !authService.isTokenExpired(token);
   },
 };
 

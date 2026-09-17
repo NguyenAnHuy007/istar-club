@@ -51,7 +51,7 @@ public class FileUploadUtil {
                 originalFilename.toLowerCase().endsWith(".webp")
         );
 
-        if (!isValidType && !isValidExt) {
+        if (!isValidType || !isValidExt) {
             throw new BadRequestException("Định dạng ảnh không hợp lệ! Chỉ chấp nhận: JPG, JPEG, PNG, WEBP.");
         }
     }
@@ -74,7 +74,7 @@ public class FileUploadUtil {
                 originalFilename.toLowerCase().endsWith(".docx")
         );
 
-        if (!isValidType && !isValidExt) {
+        if (!isValidType || !isValidExt) {
             throw new BadRequestException("Định dạng file CV không hợp lệ! Chỉ chấp nhận: PDF, DOC, DOCX.");
         }
     }

@@ -19,4 +19,10 @@ public interface CommonCodeService {
     void deleteCode(Long id);
 
     void toggleActive(Long id);
+
+    List<CommonCodeDto> getAllSchools();
+
+    List<CommonCodeDto> getAllCourses();
+
+    List<CommonCodeDto> getRecentCourses(int limit);
 }

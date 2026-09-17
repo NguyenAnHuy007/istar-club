@@ -57,7 +57,7 @@ public class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Đăng ký thành công!"))
+                .andExpect(jsonPath("$.message").value("Đăng ký thành công! Tài khoản của bạn đang chờ Quản trị viên kích hoạt."))
                 .andExpect(jsonPath("$.data.username").value("testuser_01"))
                 .andExpect(jsonPath("$.data.email").value("testuser_01@gmail.com"));
     }
@@ -118,6 +118,9 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Email đã tồn tại!"));
     }
 
+    @Autowired
+    private com.haui.istar.repository.UserRepository userRepository;
+
     @Test
     @DisplayName("Đăng ký thất bại khi thiếu thông tin bắt buộc")
     void testRegister_ValidationError() throws Exception {
@@ -134,13 +137,13 @@ public class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("Đăng nhập thành công và trả về JWT Token")
-    void testLogin_Success() throws Exception {
-        // Đăng ký trước
+    @DisplayName("Đăng nhập thất bại khi tài khoản mới đăng ký chưa kích hoạt (ACCOUNT_INACTIVE)")
+    void testLogin_NewlyRegisteredUser_Inactive() throws Exception {
+        // Đăng ký tài khoản mới (mặc định isActive = false)
         RegisterRequest registerReq = RegisterRequest.builder()
-                .username("login_test_user")
+                .username("inactive_test_user")
                 .password("secret123")
-                .email("login_test@gmail.com")
+                .email("inactive_test@gmail.com")
                 .build();
 
         mockMvc.perform(post("/api/auth/register")
@@ -148,8 +151,40 @@ public class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(registerReq)))
                 .andExpect(status().isOk());
 
-        // Thực hiện đăng nhập
-        LoginRequest loginReq = new LoginRequest("login_test_user", "secret123");
+        // Đăng nhập ngay khi chưa kích hoạt -> trả về 403 Forbidden kèm ACCOUNT_INACTIVE
+        LoginRequest loginReq = new LoginRequest("inactive_test_user", "secret123");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginReq)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("ACCOUNT_INACTIVE")));
+    }
+
+    @Test
+    @DisplayName("Đăng nhập thành công khi tài khoản đã được kích hoạt")
+    void testLogin_Success_WhenActive() throws Exception {
+        // Đăng ký tài khoản
+        RegisterRequest registerReq = RegisterRequest.builder()
+                .username("active_test_user")
+                .password("secret123")
+                .email("active_test@gmail.com")
+                .build();
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerReq)))
+                .andExpect(status().isOk());
+
+        // Kích hoạt tài khoản
+        userRepository.findByUsername("active_test_user").ifPresent(user -> {
+            user.setIsActive(true);
+            userRepository.save(user);
+        });
+
+        // Thực hiện đăng nhập sau khi kích hoạt
+        LoginRequest loginReq = new LoginRequest("active_test_user", "secret123");
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -159,12 +194,27 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Đăng nhập thành công!"))
                 .andExpect(jsonPath("$.data.token").exists())
                 .andExpect(jsonPath("$.data.type").value("Bearer"))
-                .andExpect(jsonPath("$.data.username").value("login_test_user"));
+                .andExpect(jsonPath("$.data.username").value("active_test_user"));
+    }
+
+    @Test
+    @DisplayName("Đăng nhập thành công với tài khoản Admin mặc định")
+    void testLogin_DefaultAdmin() throws Exception {
+        LoginRequest loginReq = new LoginRequest("admin", "admin123");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginReq)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.token").exists())
+                .andExpect(jsonPath("$.data.username").value("admin"));
     }
 
     @Test
     @DisplayName("Đăng nhập thất bại khi sai mật khẩu")
     void testLogin_WrongPassword() throws Exception {
+        // Tạo và kích hoạt user
         RegisterRequest registerReq = RegisterRequest.builder()
                 .username("wrong_pass_user")
                 .password("correct_pass")
@@ -175,6 +225,11 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerReq)))
                 .andExpect(status().isOk());
+
+        userRepository.findByUsername("wrong_pass_user").ifPresent(user -> {
+            user.setIsActive(true);
+            userRepository.save(user);
+        });
 
         LoginRequest loginReq = new LoginRequest("wrong_pass_user", "incorrect_pass");
 

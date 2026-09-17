@@ -31,7 +31,7 @@ const departments = [
   },
   {
     icon: Megaphone,
-    name: "Truyền thông & Sự kiện",
+    name: "Truyền thông và Tổ chức sự kiện",
     description:
       "Lên kế hoạch, tổ chức sự kiện và xây dựng hình ảnh CLB. Sáng tạo nội dung và kết nối cộng đồng.",
     gradient: "from-[#10B981] to-[#34D399]",

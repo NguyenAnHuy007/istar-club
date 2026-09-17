@@ -38,17 +38,30 @@ public class RecruitmentServiceImpl implements RecruitmentService {
     @Override
     @Transactional
     public RecruitmentDto createRecruitment(CreateRecruitmentRequest request) {
-        // Đóng đợt tuyển cũ nếu có
-        recruitmentRepository.findByIsActiveTrueAndIsDeletedFalse().ifPresent(old -> {
-            old.setIsActive(false);
-            recruitmentRepository.save(old);
-        });
+        String name = request.getName().trim();
+        if (recruitmentRepository.existsByNameAndIsDeletedFalse(name)) {
+            throw new BadRequestException("Tên đợt tuyển thành viên đã tồn tại: " + name);
+        }
+
+        if (request.getStartDate() != null && request.getEndDate() != null && request.getStartDate().isAfter(request.getEndDate())) {
+            throw new BadRequestException("Ngày bắt đầu không được sau ngày kết thúc");
+        }
+
+        boolean shouldBeActive = request.getIsActive() != null ? request.getIsActive() : true;
+        if (shouldBeActive) {
+            // Đóng đợt tuyển đang hoạt động cũ nếu có
+            recruitmentRepository.findByIsActiveTrueAndIsDeletedFalse().ifPresent(old -> {
+                old.setIsActive(false);
+                recruitmentRepository.save(old);
+            });
+        }
 
         Recruitment recruitment = Recruitment.builder()
-                .name(request.getName())
+                .name(name)
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
-                .isActive(true)
+                .isActive(shouldBeActive)
+                .description(request.getDescription())
                 .build();
 
         return mapToDto(recruitmentRepository.save(recruitment));
@@ -60,11 +73,54 @@ public class RecruitmentServiceImpl implements RecruitmentService {
         Recruitment recruitment = recruitmentRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt tuyển"));
 
-        recruitment.setName(request.getName());
+        String name = request.getName().trim();
+        if (recruitmentRepository.existsByNameAndIdNotAndIsDeletedFalse(name, id)) {
+            throw new BadRequestException("Tên đợt tuyển thành viên đã tồn tại: " + name);
+        }
+
+        if (request.getStartDate() != null && request.getEndDate() != null && request.getStartDate().isAfter(request.getEndDate())) {
+            throw new BadRequestException("Ngày bắt đầu không được sau ngày kết thúc");
+        }
+
+        recruitment.setName(name);
         recruitment.setStartDate(request.getStartDate());
         recruitment.setEndDate(request.getEndDate());
+        recruitment.setDescription(request.getDescription());
+
+        if (request.getIsActive() != null && !request.getIsActive().equals(recruitment.getIsActive())) {
+            if (Boolean.TRUE.equals(request.getIsActive())) {
+                recruitmentRepository.findByIsActiveTrueAndIsDeletedFalse().ifPresent(old -> {
+                    if (!old.getId().equals(id)) {
+                        old.setIsActive(false);
+                        recruitmentRepository.save(old);
+                    }
+                });
+            }
+            recruitment.setIsActive(request.getIsActive());
+        }
 
         return mapToDto(recruitmentRepository.save(recruitment));
+    }
+
+    @Override
+    @Transactional
+    public void activateRecruitment(Long id) {
+        Recruitment recruitment = recruitmentRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đợt tuyển"));
+
+        if (Boolean.TRUE.equals(recruitment.getIsActive())) {
+            return;
+        }
+
+        recruitmentRepository.findByIsActiveTrueAndIsDeletedFalse().ifPresent(old -> {
+            if (!old.getId().equals(id)) {
+                old.setIsActive(false);
+                recruitmentRepository.save(old);
+            }
+        });
+
+        recruitment.setIsActive(true);
+        recruitmentRepository.save(recruitment);
     }
 
     @Override
@@ -105,6 +161,7 @@ public class RecruitmentServiceImpl implements RecruitmentService {
                 .startDate(recruitment.getStartDate())
                 .endDate(recruitment.getEndDate())
                 .isActive(recruitment.getIsActive())
+                .description(recruitment.getDescription())
                 .createdAt(recruitment.getCreatedAt())
                 .updatedAt(recruitment.getUpdatedAt())
                 .build();

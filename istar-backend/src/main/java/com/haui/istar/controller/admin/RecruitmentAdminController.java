@@ -15,10 +15,18 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/admin/recruitments")
 @RequiredArgsConstructor
-@PreAuthorize("hasAuthority('PERM_RECRUITMENT_MANAGE')")
+@PreAuthorize("hasAnyAuthority('PERM_RECRUITMENT_MANAGE', 'RECRUITMENT_MANAGE', 'APPLICATION_VIEW', 'APPLICATION_VIEW_OWN_DEPT', 'ROLE_ADMIN', 'ROLE_RECEPTIONIST', 'ROLE_INTERVIEWER')")
 public class RecruitmentAdminController {
 
     private final RecruitmentService recruitmentService;
+
+    @GetMapping("/active")
+    public ResponseEntity<ApiResponse<RecruitmentDto>> getActiveRecruitment() {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Lấy thông tin đợt tuyển đang mở thành công",
+                recruitmentService.getActiveRecruitment()
+        ));
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<RecruitmentDto>>> getAllRecruitments(
@@ -40,6 +48,7 @@ public class RecruitmentAdminController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('PERM_RECRUITMENT_MANAGE', 'RECRUITMENT_MANAGE', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<RecruitmentDto>> createRecruitment(
             @Valid @RequestBody CreateRecruitmentRequest request
     ) {
@@ -50,6 +59,7 @@ public class RecruitmentAdminController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('PERM_RECRUITMENT_MANAGE', 'RECRUITMENT_MANAGE', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<RecruitmentDto>> updateRecruitment(
             @PathVariable Long id,
             @Valid @RequestBody CreateRecruitmentRequest request
@@ -60,13 +70,22 @@ public class RecruitmentAdminController {
         ));
     }
 
+    @PutMapping("/{id}/activate")
+    @PreAuthorize("hasAnyAuthority('PERM_RECRUITMENT_MANAGE', 'RECRUITMENT_MANAGE', 'ROLE_ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> activateRecruitment(@PathVariable Long id) {
+        recruitmentService.activateRecruitment(id);
+        return ResponseEntity.ok(ApiResponse.success("Kích hoạt đợt tuyển thành công", null));
+    }
+
     @PutMapping("/{id}/close")
+    @PreAuthorize("hasAnyAuthority('PERM_RECRUITMENT_MANAGE', 'RECRUITMENT_MANAGE', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> closeRecruitment(@PathVariable Long id) {
         recruitmentService.closeRecruitment(id);
         return ResponseEntity.ok(ApiResponse.success("Đóng đợt tuyển thành công", null));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('PERM_RECRUITMENT_MANAGE', 'RECRUITMENT_MANAGE', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteRecruitment(@PathVariable Long id) {
         recruitmentService.softDeleteRecruitment(id);
         return ResponseEntity.ok(ApiResponse.success("Xóa đợt tuyển thành công", null));

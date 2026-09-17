@@ -25,6 +25,7 @@ public class ApplicationFormController {
     }
 
     @PutMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyAuthority('APPLICATION_EDIT', 'ROLE_ADMIN', 'PERM_APPLICATION_EDIT')")
     public ResponseEntity<ApiResponse<ApplicationFormResponse>> updateApplication(
             @PathVariable Long id,
             @RequestBody @Valid ApplicationFormRequest request) {
@@ -33,6 +34,7 @@ public class ApplicationFormController {
     }
 
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyAuthority('APPLICATION_DELETE', 'ROLE_ADMIN', 'PERM_APPLICATION_DELETE')")
     public ResponseEntity<ApiResponse<Void>> deleteApplication(@PathVariable Long id) {
         applicationFormService.deleteById(id);
         return ResponseEntity.ok(ApiResponse.success("Hủy đơn ứng tuyển thành công!", null));

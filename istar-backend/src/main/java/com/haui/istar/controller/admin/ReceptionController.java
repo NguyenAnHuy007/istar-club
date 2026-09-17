@@ -14,16 +14,23 @@ public class ReceptionController {
     private final ReceptionService receptionService;
 
     @PutMapping("/applications/{id}/checkin")
-    @PreAuthorize("hasAuthority('APPLICATION_CHECKIN')")
+    @PreAuthorize("hasAnyAuthority('APPLICATION_CHECKIN', 'ROLE_ADMIN', 'PERM_APPLICATION_CHECKIN')")
     public ResponseEntity<Void> checkInApplication(@PathVariable Long id) {
         receptionService.checkInApplication(id);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/applications/{id}/no-show")
-    @PreAuthorize("hasAuthority('APPLICATION_CHECKIN')")
+    @PreAuthorize("hasAnyAuthority('APPLICATION_CHECKIN', 'ROLE_ADMIN', 'PERM_APPLICATION_CHECKIN')")
     public ResponseEntity<Void> noShowApplication(@PathVariable Long id) {
         receptionService.noShowApplication(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/applications/{id}/revert-submitted")
+    @PreAuthorize("hasAnyAuthority('APPLICATION_CHECKIN', 'ROLE_ADMIN', 'PERM_APPLICATION_CHECKIN')")
+    public ResponseEntity<Void> revertToSubmitted(@PathVariable Long id) {
+        receptionService.revertToSubmitted(id);
         return ResponseEntity.ok().build();
     }
 }

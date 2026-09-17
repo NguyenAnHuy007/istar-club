@@ -1,6 +1,7 @@
 package com.haui.istar.repository;
 
 import com.haui.istar.model.CommonCode;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,6 +14,10 @@ public interface CommonCodeRepository extends JpaRepository<CommonCode, Long> {
     List<CommonCode> findByCategoryAndIsActiveTrueOrderByOrderIndexAsc(String category);
 
     List<CommonCode> findByCategoryOrderByOrderIndexAsc(String category);
+
+    List<CommonCode> findByCategoryAndIsActiveTrueOrderByOrderIndexDesc(String category);
+
+    List<CommonCode> findByCategoryAndIsActiveTrueOrderByOrderIndexDesc(String category, Pageable pageable);
 
     Optional<CommonCode> findByCategoryAndCode(String category, String code);
 

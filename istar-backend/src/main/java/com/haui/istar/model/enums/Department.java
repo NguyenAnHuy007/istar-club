@@ -6,7 +6,7 @@ import lombok.Getter;
 public enum Department {
     MUSIC("Ban âm nhạc"),
     RAP("Ban rap"),
-    MEDIA_AND_EVENT("Ban Truyền thông và tổ chức sự kiện"),
+    MEDIA_AND_EVENT("Ban Truyền thông và Tổ chức sự kiện"),
     DANCE("Ban vũ đạo");
 
     private final String displayName;

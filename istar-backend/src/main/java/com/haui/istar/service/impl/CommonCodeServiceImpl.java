@@ -9,9 +9,12 @@ import com.haui.istar.model.CommonCode;
 import com.haui.istar.repository.CommonCodeRepository;
 import com.haui.istar.service.CommonCodeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -106,5 +109,32 @@ public class CommonCodeServiceImpl implements CommonCodeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mã cấu hình với id: " + id));
         entity.setIsActive(!Boolean.TRUE.equals(entity.getIsActive()));
         commonCodeRepository.save(entity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CommonCodeDto> getAllSchools() {
+        return getActiveCodesByCategory("SCHOOL");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CommonCodeDto> getAllCourses() {
+        return commonCodeRepository.findByCategoryAndIsActiveTrueOrderByOrderIndexDesc("COURSE")
+                .stream()
+                .map(CommonCodeDto::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CommonCodeDto> getRecentCourses(int limit) {
+        int pageSize = limit > 0 ? limit : 6;
+        Pageable pageable = PageRequest.of(0, pageSize);
+        List<CommonCode> recentDesc = commonCodeRepository.findByCategoryAndIsActiveTrueOrderByOrderIndexDesc("COURSE", pageable);
+        return recentDesc.stream()
+                .sorted(Comparator.comparingInt(c -> c.getOrderIndex() != null ? c.getOrderIndex() : 0))
+                .map(CommonCodeDto::fromEntity)
+                .collect(Collectors.toList());
     }
 }

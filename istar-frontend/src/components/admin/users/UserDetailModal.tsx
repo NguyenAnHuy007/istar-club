@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { isAxiosError } from "axios";
 import {
   User,
   UpdateUserRequest,
@@ -25,6 +26,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect, { Option } from "@/components/common/CustomSelect";
+import SelectWithOther, { SelectOption } from "@/components/common/SelectWithOther";
+import commonCodeService from "@/services/commonCodeService";
 import { HAUI_SCHOOLS } from "@/constants/schools";
 
 interface UserDetailModalProps {
@@ -60,7 +63,7 @@ const DEPARTMENTS_DATA: {
   },
   {
     code: Department.MEDIA_AND_EVENT,
-    name: "Ban Truyền thông & Sự kiện",
+    name: "Ban Truyền thông và Tổ chức sự kiện",
     icon: Video,
     desc: "Nhiếp ảnh, thiết kế & tổ chức",
   },
@@ -68,17 +71,18 @@ const DEPARTMENTS_DATA: {
 
 const ROLE_OPTIONS: Option[] = [
   { value: Role.ADMIN, label: "Quản trị viên (ADMIN)" },
-  { value: Role.MODERATOR, label: "Điều phối viên (MODERATOR)" },
+  { value: Role.RECEPTIONIST, label: "Lễ tân (RECEPTIONIST)" },
+  { value: Role.INTERVIEWER, label: "Phỏng vấn viên (INTERVIEWER)" },
+  { value: Role.REVIEWER, label: "Hội đồng xét duyệt (REVIEWER)" },
   { value: Role.MEMBER, label: "Thành viên (MEMBER)" },
 ];
 
 const POSITION_OPTIONS: Option[] = [
-  { value: Position.PRESIDENT, label: "Chủ nhiệm (PRESIDENT)" },
-  { value: Position.VICE_PRESIDENT, label: "Phó chủ nhiệm (VICE_PRESIDENT)" },
-  { value: Position.HEAD_OF_DEPARTMENT, label: "Trưởng ban (HEAD_OF_DEPARTMENT)" },
-  { value: Position.DEPUTY_HEAD_OF_DEPARTMENT, label: "Phó ban (DEPUTY_HEAD_OF_DEPARTMENT)" },
-  { value: Position.MEMBER, label: "Thành viên (MEMBER)" },
-  { value: Position.CANDIDATE, label: "Ứng viên (CANDIDATE)" },
+  { value: Position.PRESIDENT, label: "Chủ nhiệm" },
+  { value: Position.VICE_PRESIDENT, label: "Phó chủ nhiệm" },
+  { value: Position.DEPARTMENT_HEAD, label: "Trưởng ban" },
+  { value: Position.AREA_MANAGER, label: "Ban phụ trách khu vực" },
+  { value: Position.MEMBER, label: "Thành viên" },
 ];
 
 const AREA_OPTIONS: Option[] = [
@@ -94,25 +98,69 @@ export default function UserDetailModal({
 }: UserDetailModalProps) {
   const [formData, setFormData] = useState<UpdateUserRequest>({});
   const [selectedDepts, setSelectedDepts] = useState<Department[]>([]);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [schoolOptions, setSchoolOptions] = useState<SelectOption[]>(
+    HAUI_SCHOOLS.map((s) => ({ value: s, label: s }))
+  );
+  const [courseOptions, setCourseOptions] = useState<SelectOption[]>([]);
+
+  // Tải danh mục trường/khoa và tất cả khóa học từ backend
   useEffect(() => {
-    if (user && isOpen) {
+    let isMounted = true;
+    const fetchCodes = async () => {
+      try {
+        const [schools, courses] = await Promise.all([
+          commonCodeService.getSchools(),
+          commonCodeService.getAllCourses(),
+        ]);
+        if (isMounted) {
+          if (schools && schools.length > 0) {
+            setSchoolOptions(
+              schools.map((item) => ({
+                value: item.name,
+                label: item.name,
+              }))
+            );
+          }
+          if (courses && courses.length > 0) {
+            setCourseOptions(
+              courses.map((item) => ({
+                value: item.code,
+                label: item.name,
+              }))
+            );
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi khi tải danh mục trường/khóa học trong modal:", err);
+      }
+    };
+    fetchCodes();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Sync state safely with useEffect when user or isOpen changes
+  useEffect(() => {
+    if (isOpen && user) {
       setFormData({
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        birthday: user.birthday,
-        address: user.address,
-        school: user.school,
-        majorClass: user.majorClass,
-        course: user.course,
-        phoneNumber: user.phoneNumber,
-        isActive: user.isActive,
+        email: user.email || "",
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        birthday: user.birthday ? user.birthday.substring(0, 10) : "",
+        address: user.address || "",
+        school: user.school || "",
+        majorClass: user.majorClass || "",
+        course: user.course || "",
+        phoneNumber: user.phoneNumber || "",
+        isActive: user.isActive ?? true,
         role: user.role,
-        position: user.position,
-        area: user.area,
+        position: user.position || Position.MEMBER,
+        area: user.area || Area.HANOI,
         generationId: user.generationId,
       });
 
@@ -121,9 +169,16 @@ export default function UserDetailModal({
         user.userDepartments?.map((ud) => ud.department) || [];
       setSelectedDepts(existingDepts);
 
+      // Lấy danh sách nhóm quyền
+      const initialGroups =
+        user.roles && user.roles.length > 0
+          ? user.roles
+          : [String(user.role || "MEMBER")];
+      setSelectedGroups(initialGroups);
+
       setError(null);
     }
-  }, [user, isOpen]);
+  }, [isOpen, user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -152,21 +207,33 @@ export default function UserDetailModal({
     setError(null);
 
     // Chuyển danh sách ban được chọn thành userDepartments
+    const primaryRole = selectedGroups.includes("ADMIN")
+      ? Role.ADMIN
+      : ((selectedGroups[0] as Role) || Role.MEMBER);
+
     const updatedPayload: UpdateUserRequest = {
       ...formData,
+      permissionGroupCodes: selectedGroups,
+      role: primaryRole,
       userDepartments: selectedDepts.map((d) => ({
         department: d,
         position: formData.position || Position.MEMBER,
       })),
     };
 
+    delete (updatedPayload as { username?: string }).username;
+    if (!updatedPayload.password || updatedPayload.password.trim() === "") {
+      delete (updatedPayload as { password?: string }).password;
+    }
+
     try {
       await adminUserService.updateUser(user.id, updatedPayload);
       onUserUpdated();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.response?.data?.message || "Đã xảy ra lỗi khi cập nhật.");
+      const msg = isAxiosError(err) ? err.response?.data?.message : null;
+      setError(msg || "Đã xảy ra lỗi khi cập nhật.");
     } finally {
       setIsSaving(false);
     }
@@ -184,9 +251,10 @@ export default function UserDetailModal({
       }
       onUserUpdated();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.response?.data?.message || "Lỗi khi thay đổi trạng thái.");
+      const msg = isAxiosError(err) ? err.response?.data?.message : null;
+      setError(msg || "Lỗi khi thay đổi trạng thái.");
     } finally {
       setIsSaving(false);
     }
@@ -205,9 +273,10 @@ export default function UserDetailModal({
       await adminUserService.softDeleteUser(user.id);
       onUserUpdated();
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.response?.data?.message || "Lỗi khi xóa người dùng.");
+      const msg = isAxiosError(err) ? err.response?.data?.message : null;
+      setError(msg || "Lỗi khi xóa người dùng.");
     } finally {
       setIsSaving(false);
     }
@@ -418,22 +487,20 @@ export default function UserDetailModal({
                     <label className="block text-xs font-medium text-[#8A8F98] mb-1.5">
                       Trường / Khoa
                     </label>
-                    <input
-                      name="school"
-                      list="school-options"
+                    <SelectWithOther
+                      id="school"
                       value={formData.school || ""}
-                      onChange={handleInputChange}
-                      placeholder="Trường Công nghệ Thông tin"
-                      className="w-full px-3.5 py-2.5 bg-black/40 border border-white/[0.1] rounded-xl text-sm text-[#EDEDEF] focus:border-[#4d8ee8] focus:ring-1 focus:ring-[#4d8ee8] outline-none transition-all placeholder-[#8A8F98]/40"
+                      onChange={(val) =>
+                        setFormData((prev) => ({ ...prev, school: val }))
+                      }
+                      options={schoolOptions}
+                      placeholder="-- Chọn Trường / Khoa --"
+                      otherLabel="Khác (Nhập trường/khoa khác)..."
+                      otherPlaceholder="Nhập tên Trường / Khoa của bạn..."
                     />
-                    <datalist id="school-options">
-                      {HAUI_SCHOOLS.map((s) => (
-                        <option key={s} value={s} />
-                      ))}
-                    </datalist>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-[#8A8F98] mb-1.5">
                         Lớp chuyên ngành
@@ -450,12 +517,16 @@ export default function UserDetailModal({
                       <label className="block text-xs font-medium text-[#8A8F98] mb-1.5">
                         Khóa
                       </label>
-                      <input
-                        name="course"
+                      <SelectWithOther
+                        id="course"
                         value={formData.course || ""}
-                        onChange={handleInputChange}
-                        placeholder="K17"
-                        className="w-full px-3.5 py-2.5 bg-black/40 border border-white/[0.1] rounded-xl text-sm text-[#EDEDEF] focus:border-[#4d8ee8] focus:ring-1 focus:ring-[#4d8ee8] outline-none transition-all placeholder-[#8A8F98]/40"
+                        onChange={(val) =>
+                          setFormData((prev) => ({ ...prev, course: val }))
+                        }
+                        options={courseOptions}
+                        placeholder="-- Chọn Khóa --"
+                        otherLabel="Khác (Nhập khóa khác)..."
+                        otherPlaceholder="Nhập khóa (VD: K22, Khóa 2025...)"
                       />
                     </div>
                   </div>
@@ -468,22 +539,47 @@ export default function UserDetailModal({
                   Phân quyền & Chức vụ
                 </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-[#8A8F98] mb-1.5">
-                      Role hệ thống
-                    </label>
-                    <CustomSelect
-                      value={formData.role || ""}
-                      onChange={(val) => handleSelectChange("role", val)}
-                      options={ROLE_OPTIONS}
-                      placeholder="Chọn role..."
-                    />
+                {/* Nhóm quyền hệ thống (RBAC Groups) */}
+                <div>
+                  <label className="block text-xs font-medium text-[#8A8F98] mb-2">
+                    Nhóm quyền hệ thống (Chọn một hoặc nhiều nhóm)
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {ROLE_OPTIONS.map((opt) => {
+                      const isSelected = selectedGroups.includes(opt.value);
+                      return (
+                        <button
+                          type="button"
+                          key={opt.value}
+                          onClick={() => {
+                            if (isSelected) {
+                              if (selectedGroups.length > 1) {
+                                setSelectedGroups(
+                                  selectedGroups.filter((g) => g !== opt.value)
+                                );
+                              }
+                            } else {
+                              setSelectedGroups([...selectedGroups, opt.value]);
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                            isSelected
+                              ? "bg-[#255798]/25 text-[#4d8ee8] border-[#255798]/50 shadow-[0_0_12px_rgba(37,87,152,0.25)]"
+                              : "bg-black/30 text-[#8A8F98] border-white/[0.08] hover:border-white/20 hover:text-[#EDEDEF]"
+                          }`}
+                        >
+                          {isSelected ? "✓ " : "+ "}
+                          {opt.label}
+                        </button>
+                      );
+                    })}
                   </div>
+                </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                   <div>
                     <label className="block text-xs font-medium text-[#8A8F98] mb-1.5">
-                      Chức vụ trong CLB
+                      Chức vụ trong CLB (Cấp CLB)
                     </label>
                     <CustomSelect
                       value={formData.position || ""}

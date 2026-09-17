@@ -23,7 +23,7 @@ const POSITION_LABELS: Record<string, string> = {
 const DEPARTMENT_LABELS: Record<string, string> = {
   MUSIC: "Ban Âm nhạc",
   RAP: "Ban Rap",
-  MEDIA_AND_EVENT: "Ban Truyền thông & Sự kiện",
+  MEDIA_AND_EVENT: "Ban TT&TCSK",
   DANCE: "Ban Vũ đạo",
 };
 
@@ -62,11 +62,11 @@ export default function UserFilters({
     return () => clearTimeout(handler);
   }, [keyword, criteria, onFilterChange]);
 
-  const handleSelectChange = (
-    field: keyof UserSearchCriteria,
+  const handleSelectChange = <K extends keyof UserSearchCriteria>(
+    field: K,
     value: string
   ) => {
-    let parsedValue: any = value;
+    let parsedValue: unknown = value;
     if (value === "") {
       parsedValue = undefined;
     } else if (field === "isActive") {
@@ -75,7 +75,7 @@ export default function UserFilters({
 
     onFilterChange({
       ...criteria,
-      [field]: parsedValue,
+      [field]: parsedValue as UserSearchCriteria[K],
       page: 0,
     });
   };

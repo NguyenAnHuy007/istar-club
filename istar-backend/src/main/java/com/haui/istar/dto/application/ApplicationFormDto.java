@@ -1,6 +1,7 @@
 package com.haui.istar.dto.application;
 
 import com.haui.istar.model.enums.ApplicationStatus;
+import com.haui.istar.model.enums.Area;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,10 +29,14 @@ public class ApplicationFormDto {
     private String course;
     private String knowIStar;
     private String reasonIStarer;
+    private String facebookUrl;
     private String avatarUrl;
     private ApplicationStatus status;
+    private Area area;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime checkedInAt;
+    private LocalDateTime interviewedAt;
     private Long version;
     
     private Long recruitmentId;

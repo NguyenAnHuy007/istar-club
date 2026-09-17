@@ -12,5 +12,6 @@ public interface AdminApplicationService {
     void approveApplication(Long id);
     void rejectApplication(Long id);
     String uploadAvatar(Long id, MultipartFile file);
+    void deleteAvatar(Long id);
     void createAccountFromApprovedApplication(Long applicationId);
 }

@@ -63,11 +63,6 @@ public class User {
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    @Builder.Default
-    private Role role = Role.MEMBER;
-
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     @Builder.Default
     private Position position = Position.MEMBER;
@@ -132,5 +127,33 @@ public class User {
             }
         }
         return codes;
+    }
+
+    public boolean isAdmin() {
+        if (permissionGroups == null) return false;
+        return permissionGroups.stream().anyMatch(pg -> "ADMIN".equalsIgnoreCase(pg.getCode()));
+    }
+
+    public Set<String> getRoleCodes() {
+        Set<String> roles = new HashSet<>();
+        if (permissionGroups != null) {
+            for (PermissionGroup pg : permissionGroups) {
+                if (pg.getCode() != null) {
+                    roles.add(pg.getCode());
+                }
+            }
+        }
+        if (roles.isEmpty()) {
+            roles.add("MEMBER");
+        }
+        return roles;
+    }
+
+    public String getPrimaryRole() {
+        if (isAdmin()) {
+            return "ADMIN";
+        }
+        Set<String> roles = getRoleCodes();
+        return roles.isEmpty() ? "MEMBER" : roles.iterator().next();
     }
 }

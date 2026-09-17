@@ -68,3 +68,13 @@ CREATE TRIGGER trg_check_position_limits
 BEFORE INSERT OR UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION check_position_limits_func();
+
+-- 4. Constraint on Area & Position
+-- Rule: Members in NINH_BINH cannot be PRESIDENT or VICE_PRESIDENT.
+-- Rule: AREA_MANAGER must belong to NINH_BINH.
+ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_user_area_position;
+ALTER TABLE users ADD CONSTRAINT chk_user_area_position
+CHECK (
+    NOT (area = 'NINH_BINH' AND position IN ('PRESIDENT', 'VICE_PRESIDENT'))
+    AND NOT (position = 'AREA_MANAGER' AND area != 'NINH_BINH')
+);

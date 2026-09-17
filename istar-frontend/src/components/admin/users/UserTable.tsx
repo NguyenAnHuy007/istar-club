@@ -192,27 +192,35 @@ export default function UserTable({
 
                   {/* Role */}
                   <td className="px-4 py-3.5">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
-                        user.role === "ADMIN"
-                          ? "bg-[#255798]/25 text-[#4d8ee8] border border-[#255798]/30"
-                          : "bg-white/[0.04] text-[#8A8F98] border border-white/[0.08]"
-                      }`}
-                    >
-                      {user.role}
-                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {(user.roles && user.roles.length > 0 ? user.roles : [String(user.role || "MEMBER")]).map((r) => {
+                        const isAdminRole = r === "ADMIN";
+                        return (
+                          <span
+                            key={r}
+                            className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ${
+                              isAdminRole
+                                ? "bg-[#255798]/25 text-[#4d8ee8] border border-[#255798]/30"
+                                : "bg-white/[0.04] text-[#8A8F98] border border-white/[0.08]"
+                            }`}
+                          >
+                            {r}
+                          </span>
+                        );
+                      })}
+                    </div>
                   </td>
 
                   {/* Status */}
-                  <td className="px-4 py-3.5">
+                  <td className="px-4 py-3.5 whitespace-nowrap">
                     {user.isActive ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
-                        <ShieldCheck className="w-3.5 h-3.5" />
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-emerald-500/10 border-emerald-500/25 text-emerald-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         Đang hoạt động
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 text-xs text-red-400 font-medium">
-                        <ShieldAlert className="w-3.5 h-3.5" />
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-rose-500/10 border-rose-500/25 text-rose-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
                         Đã vô hiệu
                       </span>
                     )}

@@ -16,6 +16,7 @@ public class RecruitmentDto {
     private LocalDate startDate;
     private LocalDate endDate;
     private Boolean isActive;
+    private String description;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

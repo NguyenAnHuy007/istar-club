@@ -21,6 +21,13 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAdmin: boolean;
+  isReceptionist: boolean;
+  isInterviewer: boolean;
+  hasRole: (role: string) => boolean;
+  hasPermission: (permission: string) => boolean;
+  hasAnyRole: (roles: string[]) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
   login: (data: LoginRequest) => Promise<LoginResponseData>;
   register: (data: RegisterRequest) => Promise<User>;
   logout: () => void;
@@ -40,23 +47,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedToken = authService.getToken();
       const storedUser = authService.getUser();
 
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(storedUser);
+      if (storedToken) {
+        // Kiểm tra nếu token đã hết hạn
+        if (authService.isTokenExpired(storedToken)) {
+          authService.clearSession();
+          setToken(null);
+          setUser(null);
+          setIsLoading(false);
+          if (typeof window !== "undefined") {
+            const currentPath = window.location.pathname;
+            if (
+              !currentPath.startsWith("/login") &&
+              !currentPath.startsWith("/register") &&
+              currentPath.startsWith("/admin")
+            ) {
+              const redirectQuery = encodeURIComponent(currentPath + window.location.search);
+              window.location.href = `/login?expired=true&redirect=${redirectQuery}`;
+            }
+          }
+          return;
+        }
 
-        // Thử đồng bộ profile mới nhất từ server
-        try {
-          const profile = await authService.getProfile();
-          const updatedUser: AuthUser = {
-            id: profile.id,
-            username: profile.username,
-            email: profile.email,
-            role: profile.role,
-          };
-          setUser(updatedUser);
-          authService.saveSession(storedToken, updatedUser);
-        } catch (error) {
-          console.warn("Could not refresh profile:", error);
+        if (storedUser) {
+          setToken(storedToken);
+          setUser(storedUser);
+
+          // Thử đồng bộ profile mới nhất từ server
+          try {
+            const profile = await authService.getProfile();
+            const updatedUser: AuthUser = {
+              id: profile.id,
+              username: profile.username,
+              email: profile.email,
+              role: profile.role,
+              roles: profile.roles || (profile.role ? [String(profile.role)] : ["MEMBER"]),
+              permissions: profile.permissions || [],
+              userDepartments: profile.userDepartments || [],
+            };
+            setUser(updatedUser);
+            authService.saveSession(storedToken, updatedUser);
+          } catch (error) {
+            console.warn("Could not refresh profile:", error);
+          }
         }
       }
       setIsLoading(false);
@@ -65,6 +97,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
+  // Lắng nghe hết hạn token tự động theo thời gian thực
+  useEffect(() => {
+    if (!token) return;
+    const expiryTime = authService.getTokenExpiryTime(token);
+    if (!expiryTime) return;
+
+    const msRemaining = expiryTime - Date.now();
+    const handleExpired = () => {
+      authService.clearSession();
+      setToken(null);
+      setUser(null);
+      if (typeof window !== "undefined") {
+        const currentPath = window.location.pathname;
+        if (!currentPath.startsWith("/login") && !currentPath.startsWith("/register")) {
+          const redirectQuery = encodeURIComponent(currentPath + window.location.search);
+          window.location.href = `/login?expired=true&redirect=${redirectQuery}`;
+        }
+      }
+    };
+
+    if (msRemaining <= 0) {
+      handleExpired();
+      return;
+    }
+
+    const timer = setTimeout(handleExpired, msRemaining);
+    return () => clearTimeout(timer);
+  }, [token]);
+
   const login = useCallback(async (data: LoginRequest): Promise<LoginResponseData> => {
     const res = await authService.login(data);
     const authUser: AuthUser = {
@@ -72,6 +133,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       username: res.username,
       email: res.email,
       role: res.role,
+      roles: res.roles || (res.role ? [String(res.role)] : ["MEMBER"]),
+      permissions: res.permissions || [],
+      userDepartments: res.userDepartments || [],
     };
     setToken(res.token);
     setUser(authUser);
@@ -98,6 +162,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         username: profile.username,
         email: profile.email,
         role: profile.role,
+        roles: profile.roles || (profile.role ? [String(profile.role)] : ["MEMBER"]),
+        permissions: profile.permissions || [],
+        userDepartments: profile.userDepartments || [],
       };
       setUser(updatedUser);
       authService.saveSession(token, updatedUser);
@@ -106,6 +173,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [token]);
 
+  const isAdmin = Boolean(
+    user?.roles?.includes("ADMIN") ||
+    user?.role === "ADMIN"
+  );
+
+  const isReceptionist = Boolean(
+    isAdmin ||
+    user?.roles?.includes("RECEPTIONIST") ||
+    user?.role === "RECEPTIONIST" ||
+    user?.permissions?.includes("APPLICATION_CHECKIN") ||
+    user?.permissions?.includes("PERM_APPLICATION_CHECKIN")
+  );
+
+  const isInterviewer = Boolean(
+    isAdmin ||
+    user?.roles?.includes("INTERVIEWER") ||
+    user?.role === "INTERVIEWER" ||
+    user?.permissions?.includes("INTERVIEW_CONDUCT") ||
+    user?.permissions?.includes("PERM_INTERVIEW_CONDUCT") ||
+    user?.permissions?.includes("APPLICATION_VIEW_OWN_DEPT") ||
+    user?.permissions?.includes("PERM_APPLICATION_VIEW_OWN_DEPT")
+  );
+
+  const hasRole = useCallback((roleName: string): boolean => {
+    if (!user) return false;
+    if (user.roles?.includes("ADMIN") || user.role === "ADMIN") return true;
+    return Boolean(user.roles?.includes(roleName) || user.role === roleName);
+  }, [user]);
+
+  const hasPermission = useCallback((permCode: string): boolean => {
+    if (!user) return false;
+    if (user.roles?.includes("ADMIN") || user.role === "ADMIN") return true;
+    return Boolean(
+      user.permissions?.includes(permCode) ||
+      user.permissions?.includes("PERM_" + permCode) ||
+      (permCode.startsWith("PERM_") && user.permissions?.includes(permCode.replace("PERM_", "")))
+    );
+  }, [user]);
+
+  const hasAnyRole = useCallback((roles: string[]): boolean => {
+    if (!user) return false;
+    if (user.roles?.includes("ADMIN") || user.role === "ADMIN") return true;
+    return roles.some((r) => user.roles?.includes(r) || user.role === r);
+  }, [user]);
+
+  const hasAnyPermission = useCallback((perms: string[]): boolean => {
+    if (!user) return false;
+    if (user.roles?.includes("ADMIN") || user.role === "ADMIN") return true;
+    return perms.some((p) =>
+      user.permissions?.includes(p) ||
+      user.permissions?.includes("PERM_" + p) ||
+      (p.startsWith("PERM_") && user.permissions?.includes(p.replace("PERM_", "")))
+    );
+  }, [user]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -113,6 +235,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         isAuthenticated: !!token,
         isLoading,
+        isAdmin,
+        isReceptionist,
+        isInterviewer,
+        hasRole,
+        hasPermission,
+        hasAnyRole,
+        hasAnyPermission,
         login,
         register,
         logout,

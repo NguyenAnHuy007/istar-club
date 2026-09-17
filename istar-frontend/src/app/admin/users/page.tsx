@@ -1,34 +1,46 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { User, UserSearchCriteria } from "@/types/user";
+import { useState, useEffect, useMemo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { User, UserSearchCriteria, Position, Department } from "@/types/user";
 import { adminUserService } from "@/services/adminUserService";
-import UserFilters from "@/components/admin/users/UserFilters";
-import UserTable from "@/components/admin/users/UserTable";
 import UserDetailModal from "@/components/admin/users/UserDetailModal";
-import CustomSelect, { Option } from "@/components/common/CustomSelect";
+import {
+  AdminListLayout,
+  PageHeader,
+  HeaderSecondaryButton,
+  FilterBar,
+  FilterSearchInput,
+  FilterSelect,
+  BulkActionBar,
+  DataTable,
+  Column,
+  TablePagination,
+  TableActionGroup,
+  ActionButton,
+  DeleteButton,
+  AdminToast,
+} from "@/components/admin/common";
 import {
   ShieldAlert,
+  ShieldCheck,
   Trash2,
-  X,
   Users,
-  CheckSquare,
   AlertTriangle,
+  RefreshCw,
+  Clock,
 } from "lucide-react";
+import { isAxiosError } from "axios";
+import { DEPARTMENT_LABELS } from "@/constants/departments";
 
-const fadeUp = (delay: number = 0) => ({
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6, delay, ease: [0.16, 1, 0.3, 1] as const },
-});
-
-const PAGE_SIZE_OPTIONS: Option[] = [
-  { value: "10", label: "10 / trang" },
-  { value: "20", label: "20 / trang" },
-  { value: "30", label: "30 / trang" },
-  { value: "50", label: "50 / trang" },
-];
+const POSITION_LABELS: Record<string, string> = {
+  PRESIDENT: "Chủ nhiệm",
+  VICE_PRESIDENT: "Phó chủ nhiệm",
+  HEAD_OF_DEPARTMENT: "Trưởng ban",
+  DEPUTY_HEAD_OF_DEPARTMENT: "Phó ban",
+  MEMBER: "Thành viên",
+  CANDIDATE: "Ứng viên",
+};
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -41,58 +53,93 @@ export default function UsersPage() {
   });
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Checkbox selection state
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  // Modal confirmation for bulk action
+  // Filter dropdown options (loaded from API)
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [courses, setCourses] = useState<string[]>([]);
+
+  // Filter local state
+  const [keyword, setKeyword] = useState("");
+
+  // Toast
+  const [toast, setToast] = useState<AdminToast | null>(null);
+
+  // Confirmation modal
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     type: "deactivate" | "delete";
     count: number;
+    targetUser?: User;
   }>({
     isOpen: false,
     type: "deactivate",
     count: 0,
   });
 
-  // Modal State
+  // Detail Modal
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchUsers = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await adminUserService.searchUsers(criteria);
-      setUsers(response.content);
-      setTotalPages(response.totalPages);
-      setTotalElements(response.totalElements);
-    } catch (error) {
-      console.error("Lỗi khi fetch users:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [criteria]);
-
+  // Load filter options
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    Promise.all([
+      adminUserService.getPositions(),
+      adminUserService.getDepartments(),
+      adminUserService.getCourses(),
+    ])
+      .then(([posRes, depRes, courseRes]) => {
+        setPositions(posRes);
+        setDepartments(depRes);
+        setCourses(courseRes);
+      })
+      .catch((err) => console.error("Lỗi khi load filters:", err));
+  }, []);
 
-  // Xóa danh sách đã chọn khi chuyển trang hoặc đổi filter
-  const handleFilterChange = (newCriteria: UserSearchCriteria) => {
-    setSelectedIds(new Set());
-    setCriteria(newCriteria);
-  };
+  // Debounce keyword search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (keyword !== (criteria.keyword || "")) {
+        setCriteria((prev) => ({ ...prev, keyword: keyword || undefined, page: 0 }));
+      }
+    }, 450);
+    return () => clearTimeout(handler);
+  }, [keyword, criteria.keyword]);
 
-  const handlePageSizeChange = (newSizeStr: string) => {
-    const newSize = parseInt(newSizeStr, 10) || 20;
-    setSelectedIds(new Set());
-    setCriteria((prev) => ({
-      ...prev,
-      size: newSize,
-      page: 0,
-    }));
+  // Fetch users
+  useEffect(() => {
+    let ignore = false;
+    setIsLoading(true);
+
+    adminUserService
+      .searchUsers(criteria)
+      .then((response) => {
+        if (!ignore) {
+          setUsers(response.content);
+          setTotalPages(response.totalPages);
+          setTotalElements(response.totalElements);
+          setIsLoading(false);
+        }
+      })
+      .catch((error) => {
+        if (!ignore) {
+          console.error("Lỗi khi fetch users:", error);
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [criteria, refreshTrigger]);
+
+  const handleRefresh = () => {
+    setRefreshTrigger((prev) => prev + 1);
   };
 
   const handleSort = (field: string) => {
@@ -106,77 +153,158 @@ export default function UsersPage() {
   };
 
   const handlePageChange = (newPage: number) => {
-    if (newPage >= 0 && newPage < totalPages) {
-      setSelectedIds(new Set());
-      setCriteria((prev) => ({ ...prev, page: newPage }));
+    setSelectedIds(new Set());
+    setCriteria((prev) => ({ ...prev, page: newPage }));
+  };
+
+  const handleSizeChange = (newSize: number) => {
+    setSelectedIds(new Set());
+    setCriteria((prev) => ({ ...prev, size: newSize, page: 0 }));
+  };
+
+  const handleSelectChange = <K extends keyof UserSearchCriteria>(
+    field: K,
+    value: string
+  ) => {
+    let parsedValue: unknown = value;
+    if (value === "") {
+      parsedValue = undefined;
+    } else if (field === "isActive") {
+      parsedValue = value === "true";
+    }
+    setSelectedIds(new Set());
+    setCriteria((prev) => ({
+      ...prev,
+      [field]: parsedValue as UserSearchCriteria[K],
+      page: 0,
+    }));
+  };
+
+  // Active filter count
+  const activeFilterCount = [
+    Boolean(keyword),
+    Boolean(criteria.position),
+    Boolean(criteria.department),
+    Boolean(criteria.course),
+    criteria.isActive !== undefined,
+  ].filter(Boolean).length;
+
+  const handleClearFilters = () => {
+    setKeyword("");
+    setSelectedIds(new Set());
+    setCriteria((prev) => ({
+      page: 0,
+      size: prev.size,
+      sortBy: prev.sortBy,
+      sortDirection: prev.sortDirection,
+    }));
+  };
+
+  // Selection handlers
+  const handleToggleSelect = (id: string | number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = () => {
+    if (users.length > 0 && users.every((u) => selectedIds.has(u.id))) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        users.forEach((u) => next.delete(u.id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        users.forEach((u) => next.add(u.id));
+        return next;
+      });
     }
   };
 
-  // Toggle selection for a single user
-  const handleToggleSelect = (id: number) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  // Toggle select all on current page
-  const handleToggleSelectAll = () => {
-    const allCurrentPageSelected =
-      users.length > 0 && users.every((u) => selectedIds.has(u.id));
-
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (allCurrentPageSelected) {
-        users.forEach((u) => next.delete(u.id));
-      } else {
-        users.forEach((u) => next.add(u.id));
-      }
-      return next;
-    });
-  };
-
-  const handleClearSelection = () => {
-    setSelectedIds(new Set());
-  };
-
-  // Trigger Confirmation Modal
+  // Bulk & Single User Actions
   const openConfirmModal = (type: "deactivate" | "delete") => {
     if (selectedIds.size === 0) return;
-    setConfirmModal({
-      isOpen: true,
-      type,
-      count: selectedIds.size,
-    });
+    setConfirmModal({ isOpen: true, type, count: selectedIds.size });
+  };
+
+  const openSingleConfirmModal = (type: "deactivate" | "delete", targetUser: User) => {
+    setConfirmModal({ isOpen: true, type, count: 1, targetUser });
   };
 
   const closeConfirmModal = () => {
-    setConfirmModal({ isOpen: false, type: "deactivate", count: 0 });
+    setConfirmModal({ isOpen: false, type: "deactivate", count: 0, targetUser: undefined });
   };
 
-  // Execute Bulk Action after confirmation
-  const handleExecuteBulkAction = async () => {
-    if (selectedIds.size === 0) return;
-
+  const handleActivateSingleUser = async (user: User) => {
     setIsActionLoading(true);
     try {
-      const idsArray = Array.from(selectedIds);
-      if (confirmModal.type === "deactivate") {
-        await adminUserService.bulkDeactivateUsers(idsArray);
-      } else {
-        await adminUserService.bulkDeleteUsers(idsArray);
-      }
-      setSelectedIds(new Set());
-      closeConfirmModal();
-      await fetchUsers();
-    } catch (err: any) {
+      await adminUserService.activateUser(user.id);
+      handleRefresh();
+      setToast({
+        type: "success",
+        message: `Đã kích hoạt tài khoản @${user.username} thành công.`,
+      });
+    } catch (err: unknown) {
       console.error(err);
-      alert(err.response?.data?.message || "Lỗi khi thực hiện thao tác hàng loạt.");
+      const msg = isAxiosError(err) ? err.response?.data?.message : null;
+      setToast({
+        type: "error",
+        message: msg || "Lỗi khi kích hoạt tài khoản.",
+      });
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleExecuteBulkAction = async () => {
+    setIsActionLoading(true);
+    try {
+      if (confirmModal.targetUser) {
+        const u = confirmModal.targetUser;
+        if (confirmModal.type === "deactivate") {
+          await adminUserService.deactivateUser(u.id);
+          setToast({
+            type: "success",
+            message: `Đã vô hiệu hóa tài khoản @${u.username}.`,
+          });
+        } else {
+          await adminUserService.softDeleteUser(u.id);
+          setToast({
+            type: "success",
+            message: `Đã xóa mềm tài khoản @${u.username}.`,
+          });
+        }
+      } else {
+        if (selectedIds.size === 0) return;
+        const idsArray = Array.from(selectedIds).map(Number);
+        if (confirmModal.type === "deactivate") {
+          await adminUserService.bulkDeactivateUsers(idsArray);
+        } else {
+          await adminUserService.bulkDeleteUsers(idsArray);
+        }
+        setSelectedIds(new Set());
+        setToast({
+          type: "success",
+          message:
+            confirmModal.type === "deactivate"
+              ? `Đã vô hiệu hóa ${confirmModal.count} tài khoản.`
+              : `Đã xóa mềm ${confirmModal.count} tài khoản.`,
+        });
+      }
+      closeConfirmModal();
+      handleRefresh();
+    } catch (err: unknown) {
+      console.error(err);
+      const msg = isAxiosError(err) ? err.response?.data?.message : null;
+      setToast({
+        type: "error",
+        message: msg || "Lỗi khi thực hiện thao tác.",
+      });
     } finally {
       setIsActionLoading(false);
     }
@@ -187,163 +315,320 @@ export default function UsersPage() {
     setIsModalOpen(true);
   };
 
-  const closeEditModal = () => {
-    setIsModalOpen(false);
-    setSelectedUser(null);
-  };
+  // Filter options
+  const positionOptions = useMemo(
+    () => [
+      { value: "", label: "Tất cả chức vụ" },
+      ...positions.map((pos) => ({
+        value: pos,
+        label: POSITION_LABELS[pos] || pos,
+      })),
+    ],
+    [positions]
+  );
+
+  const departmentOptions = useMemo(
+    () => [
+      { value: "", label: "Tất cả ban" },
+      ...departments.map((dep) => ({
+        value: dep,
+        label: DEPARTMENT_LABELS[dep] || dep,
+      })),
+    ],
+    [departments]
+  );
+
+  const courseOptions = useMemo(
+    () => [
+      { value: "", label: "Tất cả khóa" },
+      ...courses.map((c) => ({ value: c, label: `Khóa ${c}` })),
+    ],
+    [courses]
+  );
+
+  const statusOptions = [
+    { value: "", label: "Tất cả trạng thái" },
+    { value: "true", label: "Đang hoạt động" },
+    { value: "false", label: "Đã vô hiệu hóa" },
+  ];
+
+  // Define columns
+  const columns: Column<User>[] = useMemo(
+    () => [
+      {
+        key: "stt",
+        header: "STT",
+        width: "w-14",
+        align: "center",
+        nowrap: true,
+        render: (_val, _row, index) => (
+          <span className="text-xs font-mono text-[#8A8F98]">
+            {(criteria.page || 0) * (criteria.size || 20) + index + 1}
+          </span>
+        ),
+      },
+      {
+        key: "fullName",
+        header: "Họ và tên",
+        sortable: true,
+        sortKey: "firstName",
+        render: (_val, row) => {
+          const fullName =
+            [row.firstName, row.lastName].filter(Boolean).join(" ") ||
+            row.username;
+          return (
+            <div>
+              <div className="font-medium text-[#EDEDEF] group-hover:text-[#4d8ee8] transition-colors">
+                {fullName}
+              </div>
+              {row.phoneNumber && (
+                <div className="text-xs text-[#8A8F98]/80 mt-0.5">
+                  {row.phoneNumber}
+                </div>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        key: "username",
+        header: "Tên đăng nhập",
+        sortable: true,
+        nowrap: true,
+        render: (_val, row) => (
+          <span className="text-xs text-[#EDEDEF] font-mono">
+            @{row.username}
+          </span>
+        ),
+      },
+      {
+        key: "email",
+        header: "Email",
+        sortable: true,
+        render: (_val, row) => (
+          <span className="text-[#8A8F98] text-xs">{row.email}</span>
+        ),
+      },
+      {
+        key: "role",
+        header: "Vai trò",
+        sortable: true,
+        render: (_val, row) => (
+          <div className="flex flex-wrap gap-1">
+            {(row.roles && row.roles.length > 0
+              ? row.roles
+              : [String(row.role || "MEMBER")]
+            ).map((r) => {
+              const isAdminRole = r === "ADMIN";
+              return (
+                <span
+                  key={r}
+                  className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ${
+                    isAdminRole
+                      ? "bg-[#255798]/20 text-[#4d8ee8] border border-[#255798]/30"
+                      : "bg-white/[0.04] text-[#8A8F98] border border-white/[0.08]"
+                  }`}
+                >
+                  {r}
+                </span>
+              );
+            })}
+          </div>
+        ),
+      },
+      {
+        key: "isActive",
+        header: "Trạng thái",
+        sortable: true,
+        nowrap: true,
+        render: (_val, row) =>
+          row.isActive ? (
+            <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Đang hoạt động
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-xs text-amber-400 font-medium">
+              <Clock className="w-3.5 h-3.5" />
+              Chưa kích hoạt
+            </span>
+          ),
+      },
+      {
+        key: "actions",
+        header: "Thao tác",
+        align: "right",
+        width: "w-24",
+        render: (_val, row) => (
+          <TableActionGroup>
+            {row.isActive ? (
+              <ActionButton
+                variant="warning"
+                icon={ShieldAlert}
+                tooltip="Vô hiệu hóa tài khoản"
+                iconOnly
+                onClick={() => openSingleConfirmModal("deactivate", row)}
+              />
+            ) : (
+              <ActionButton
+                variant="success"
+                icon={ShieldCheck}
+                tooltip="Kích hoạt tài khoản"
+                iconOnly
+                onClick={() => handleActivateSingleUser(row)}
+              />
+            )}
+            <DeleteButton
+              tooltip="Xóa tài khoản"
+              onClick={() => openSingleConfirmModal("delete", row)}
+            />
+          </TableActionGroup>
+        ),
+      },
+    ],
+    [criteria.page, criteria.size]
+  );
+
+  const isAllSelected =
+    users.length > 0 && users.every((u) => selectedIds.has(u.id));
+  const isPartiallySelected =
+    users.some((u) => selectedIds.has(u.id)) && !isAllSelected;
 
   return (
-    <div className="max-w-7xl mx-auto pb-12">
-      {/* Header with Title & Stats */}
-      <motion.div
-        {...fadeUp(0)}
-        className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4"
+    <AdminListLayout
+      toast={toast}
+      onDismissToast={() => setToast(null)}
+      maxWidthClass="max-w-7xl"
+    >
+      {/* Page Header */}
+      <PageHeader
+        title="Quản lý người dùng"
+        description="Xem danh sách, tìm kiếm, phân quyền và quản trị thành viên hệ thống."
+        stats={[
+          {
+            label: "Tổng số",
+            value: totalElements,
+            icon: Users,
+          },
+        ]}
+        actions={
+          <HeaderSecondaryButton
+            icon={RefreshCw}
+            isLoading={isLoading}
+            onClick={handleRefresh}
+          >
+            Làm mới
+          </HeaderSecondaryButton>
+        }
+      />
+
+      {/* Filter Bar */}
+      <FilterBar
+        activeFilterCount={activeFilterCount}
+        onClearFilters={handleClearFilters}
       >
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold gradient-text mb-2">
-            Quản lý người dùng
-          </h1>
-          <p className="text-sm text-[#8A8F98]">
-            Xem danh sách, tìm kiếm, phân quyền và quản trị thành viên hệ thống.
-          </p>
-        </div>
-
-        {/* Tổng số lượng tài khoản */}
-        <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs self-start sm:self-auto">
-          <Users className="w-4 h-4 text-[#4d8ee8]" />
-          <span className="text-[#8A8F98]">Tổng số:</span>
-          <span className="font-semibold text-[#EDEDEF]">
-            {totalElements.toLocaleString()}
-          </span>
-          <span className="text-[#8A8F98]">tài khoản</span>
-        </div>
-      </motion.div>
-
-      <motion.div {...fadeUp(0.15)}>
-        {/* Filters */}
-        <UserFilters criteria={criteria} onFilterChange={handleFilterChange} />
-
-        {/* Bulk Action Toolbar (Appears when >= 1 item is selected) */}
-        <AnimatePresence>
-          {selectedIds.size > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.15 }}
-              className="mb-4 px-4 py-3 rounded-2xl bg-[#0e0e18] border border-[#255798]/40 shadow-[0_8px_32px_rgba(37,87,152,0.2)] flex flex-wrap items-center justify-between gap-3"
-            >
-              <div className="flex items-center gap-2 text-sm text-[#EDEDEF]">
-                <CheckSquare className="w-4 h-4 text-[#4d8ee8]" />
-                <span>
-                  Đã chọn:{" "}
-                  <strong className="text-[#4d8ee8]">
-                    {selectedIds.size}
-                  </strong>{" "}
-                  người dùng
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {/* Vô hiệu hóa hàng loạt */}
-                <button
-                  onClick={() => openConfirmModal("deactivate")}
-                  disabled={isActionLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors disabled:opacity-50 cursor-pointer"
-                  title="Vô hiệu hóa các tài khoản đã chọn"
-                >
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>Vô hiệu hóa ({selectedIds.size})</span>
-                </button>
-
-                {/* Xóa hàng loạt */}
-                <button
-                  onClick={() => openConfirmModal("delete")}
-                  disabled={isActionLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25 transition-colors disabled:opacity-50 cursor-pointer"
-                  title="Xóa mềm các tài khoản đã chọn"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Xóa ({selectedIds.size})</span>
-                </button>
-
-                {/* Bỏ chọn */}
-                <button
-                  onClick={handleClearSelection}
-                  disabled={isActionLoading}
-                  className="p-1.5 text-[#8A8F98] hover:text-[#EDEDEF] hover:bg-white/[0.06] rounded-lg transition-colors cursor-pointer"
-                  title="Bỏ chọn tất cả"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Data Table */}
-        <UserTable
-          users={users}
-          isLoading={isLoading}
-          onEdit={openEditModal}
-          onSort={handleSort}
-          sortBy={criteria.sortBy}
-          sortDirection={criteria.sortDirection}
-          page={criteria.page || 0}
-          size={criteria.size || 20}
-          selectedIds={selectedIds}
-          onToggleSelect={handleToggleSelect}
-          onToggleSelectAll={handleToggleSelectAll}
+        <FilterSearchInput
+          value={keyword}
+          onChange={setKeyword}
+          placeholder="Tìm theo tên, email, SĐT..."
+          className="flex-1 min-w-[240px]"
         />
+        <FilterSelect
+          options={positionOptions}
+          value={criteria.position || ""}
+          onChange={(val) => handleSelectChange("position", val)}
+          placeholder="Tất cả chức vụ"
+          className="w-full sm:w-[170px]"
+        />
+        <FilterSelect
+          options={departmentOptions}
+          value={criteria.department || ""}
+          onChange={(val) => handleSelectChange("department", val)}
+          placeholder="Tất cả ban"
+          className="w-full sm:w-[170px]"
+        />
+        <FilterSelect
+          options={courseOptions}
+          value={criteria.course || ""}
+          onChange={(val) => handleSelectChange("course", val)}
+          placeholder="Tất cả khóa"
+          className="w-full sm:w-[150px]"
+        />
+        <FilterSelect
+          options={statusOptions}
+          value={
+            criteria.isActive === undefined
+              ? ""
+              : criteria.isActive
+              ? "true"
+              : "false"
+          }
+          onChange={(val) => handleSelectChange("isActive", val)}
+          placeholder="Tất cả trạng thái"
+          className="w-full sm:w-[170px]"
+        />
+      </FilterBar>
 
-        {/* Pagination & Page Size Toolbar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 px-1">
-          {/* Page size dropdown */}
-          <div className="flex items-center gap-2 text-xs text-[#8A8F98]">
-            <span>Hiển thị:</span>
-            <div className="w-32">
-              <CustomSelect
-                value={String(criteria.size || 20)}
-                onChange={handlePageSizeChange}
-                options={PAGE_SIZE_OPTIONS}
-              />
-            </div>
-            <span>
-              (Bản ghi {(Number(criteria.page) * Number(criteria.size)) + 1} -{" "}
-              {Math.min(
-                (Number(criteria.page) + 1) * Number(criteria.size),
-                totalElements
-              )}{" "}
-              trên tổng số {totalElements})
-            </span>
-          </div>
+      {/* Bulk Action Bar */}
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        unitName="người dùng"
+        onClearSelection={() => setSelectedIds(new Set())}
+      >
+        <button
+          type="button"
+          onClick={() => openConfirmModal("deactivate")}
+          disabled={isActionLoading}
+          className="h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors disabled:opacity-50 cursor-pointer"
+        >
+          <ShieldAlert className="w-3.5 h-3.5" />
+          <span>Vô hiệu hóa ({selectedIds.size})</span>
+        </button>
 
-          {/* Page navigation buttons */}
-          {totalPages > 1 && (
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-[#8A8F98]">
-                Trang {Number(criteria.page) + 1} / {totalPages}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handlePageChange(Number(criteria.page) - 1)}
-                  disabled={Number(criteria.page) === 0}
-                  className="px-3.5 py-1.5 text-xs text-[#EDEDEF] bg-white/[0.05] border border-white/[0.1] rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.1] transition-colors"
-                >
-                  Trước
-                </button>
-                <button
-                  onClick={() => handlePageChange(Number(criteria.page) + 1)}
-                  disabled={Number(criteria.page) === totalPages - 1}
-                  className="px-3.5 py-1.5 text-xs text-[#EDEDEF] bg-white/[0.05] border border-white/[0.1] rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.1] transition-colors"
-                >
-                  Sau
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </motion.div>
+        <button
+          type="button"
+          onClick={() => openConfirmModal("delete")}
+          disabled={isActionLoading}
+          className="h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-medium bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-500/25 transition-colors disabled:opacity-50 cursor-pointer"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          <span>Xóa ({selectedIds.size})</span>
+        </button>
+      </BulkActionBar>
+
+      {/* Data Table */}
+      <DataTable<User>
+        data={users}
+        columns={columns}
+        keyExtractor={(item) => item.id}
+        isLoading={isLoading}
+        loadingMessage="Đang tải danh sách người dùng..."
+        sortBy={criteria.sortBy}
+        sortDirection={criteria.sortDirection}
+        onSort={handleSort}
+        onRowClick={(row) => openEditModal(row)}
+        selection={{
+          selectedIds,
+          onToggleSelect: handleToggleSelect,
+          onToggleSelectAll: handleToggleSelectAll,
+          isAllSelected,
+          isPartiallySelected,
+        }}
+        emptyTitle="Không tìm thấy người dùng nào"
+        emptyDescription="Thử thay đổi từ khóa hoặc bộ lọc để tìm kiếm lại."
+        minWidth="min-w-[860px]"
+      />
+
+      {/* Pagination */}
+      <TablePagination
+        page={criteria.page || 0}
+        size={criteria.size || 20}
+        totalElements={totalElements}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        onSizeChange={handleSizeChange}
+        unitName="tài khoản"
+      />
 
       {/* Confirmation Modal */}
       <AnimatePresence>
@@ -379,12 +664,20 @@ export default function UsersPage() {
                 <div>
                   <h3 className="text-base font-semibold text-[#EDEDEF]">
                     {confirmModal.type === "delete"
-                      ? "Xác nhận xóa tài khoản"
+                      ? confirmModal.targetUser
+                        ? `Xác nhận xóa tài khoản @${confirmModal.targetUser.username}`
+                        : "Xác nhận xóa tài khoản"
+                      : confirmModal.targetUser
+                      ? `Xác nhận vô hiệu hóa @${confirmModal.targetUser.username}`
                       : "Xác nhận vô hiệu hóa"}
                   </h3>
                   <p className="text-xs text-[#8A8F98] mt-1 leading-relaxed">
                     {confirmModal.type === "delete"
-                      ? `Bạn có chắc chắn muốn xóa mềm ${confirmModal.count} tài khoản đã chọn? Tài khoản sẽ bị ẩn khỏi danh sách.`
+                      ? confirmModal.targetUser
+                        ? `Bạn có chắc chắn muốn xóa mềm tài khoản @${confirmModal.targetUser.username} (${[confirmModal.targetUser.firstName, confirmModal.targetUser.lastName].filter(Boolean).join(" ")})? Tài khoản sẽ bị ẩn khỏi danh sách.`
+                        : `Bạn có chắc chắn muốn xóa mềm ${confirmModal.count} tài khoản đã chọn? Tài khoản sẽ bị ẩn khỏi danh sách.`
+                      : confirmModal.targetUser
+                      ? `Bạn có chắc chắn muốn vô hiệu hóa tài khoản @${confirmModal.targetUser.username}? Người dùng sẽ không thể đăng nhập vào hệ thống.`
                       : `Bạn có chắc chắn muốn vô hiệu hóa ${confirmModal.count} tài khoản đã chọn? Người dùng sẽ không thể đăng nhập vào hệ thống.`}
                   </p>
                 </div>
@@ -421,9 +714,12 @@ export default function UsersPage() {
       <UserDetailModal
         isOpen={isModalOpen}
         user={selectedUser}
-        onClose={closeEditModal}
-        onUserUpdated={fetchUsers}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedUser(null);
+        }}
+        onUserUpdated={handleRefresh}
       />
-    </div>
+    </AdminListLayout>
   );
 }

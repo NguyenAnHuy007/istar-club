@@ -12,6 +12,7 @@ import com.haui.istar.model.UserDepartment;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -33,6 +34,8 @@ public class UserDto {
     private Boolean isActive;
     private Boolean isDeleted;
     private Role role;
+    private Set<String> roles;
+    private Set<String> permissions;
     private Position position; // Vẫn giữ chức vụ cấp câu lạc bộ
     private Area area;
     private Long generationId;
@@ -51,6 +54,13 @@ public class UserDto {
             }
         }
 
+        Set<String> roles = user.getRoleCodes();
+        Set<String> perms = user.getAllPermissionCodes();
+        Role computedRole = Role.MEMBER;
+        try {
+            computedRole = Role.valueOf(user.getPrimaryRole());
+        } catch (Exception ignored) {}
+
         return UserDto.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -65,7 +75,9 @@ public class UserDto {
                 .phoneNumber(user.getPhoneNumber())
                 .isActive(user.getIsActive())
                 .isDeleted(user.getIsDeleted())
-                .role(user.getRole())
+                .role(computedRole)
+                .roles(roles)
+                .permissions(perms)
                 .position(user.getPosition())
                 .area(user.getArea())
                 .generationId(user.getGeneration() != null ? user.getGeneration().getId() : null)

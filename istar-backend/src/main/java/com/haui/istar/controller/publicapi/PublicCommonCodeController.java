@@ -25,4 +25,35 @@ public class PublicCommonCodeController {
         List<CommonCodeDto> codes = commonCodeService.getActiveCodesByCategory(category);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh mục thành công", codes));
     }
+
+    /**
+     * API lấy tất cả các trường học / khoa trực thuộc HaUI
+     * GET /api/public/common-codes/schools
+     */
+    @GetMapping("/schools")
+    public ResponseEntity<ApiResponse<List<CommonCodeDto>>> getAllSchools() {
+        List<CommonCodeDto> schools = commonCodeService.getAllSchools();
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách trường học thành công", schools));
+    }
+
+    /**
+     * API lấy tất cả các khóa học (sắp xếp giảm dần K21 -> K12)
+     * GET /api/public/common-codes/courses
+     */
+    @GetMapping("/courses")
+    public ResponseEntity<ApiResponse<List<CommonCodeDto>>> getAllCourses() {
+        List<CommonCodeDto> courses = commonCodeService.getAllCourses();
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách tất cả khóa học thành công", courses));
+    }
+
+    /**
+     * API lấy 6 khóa học gần nhất (mặc định K16 đến K21)
+     * GET /api/public/common-codes/recent-courses?limit=6
+     */
+    @GetMapping("/recent-courses")
+    public ResponseEntity<ApiResponse<List<CommonCodeDto>>> getRecentCourses(
+            @RequestParam(name = "limit", defaultValue = "6") int limit) {
+        List<CommonCodeDto> courses = commonCodeService.getRecentCourses(limit);
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách khóa gần nhất thành công", courses));
+    }
 }

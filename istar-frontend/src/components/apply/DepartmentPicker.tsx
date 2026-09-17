@@ -32,9 +32,9 @@ export default function DepartmentPicker({
             <div
               key={dept.value}
               onClick={() => toggle(dept.value)}
-              className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer select-none transition-all duration-200 ${
+              className={`flex items-center gap-3.5 p-4 rounded-xl border cursor-pointer select-none transition-all duration-200 min-h-[58px] ${
                 isChecked
-                  ? "border-[#255798] bg-[#255798]/15 shadow-[0_0_20px_rgba(37,87,152,0.2)]"
+                  ? "border-[#255798] bg-[#255798]/15 shadow-[0_0_20px_rgba(37,87,152,0.2)] ring-1 ring-[#255798]/40"
                   : hasError
                   ? "border-red-500/40 bg-red-500/5 hover:border-red-500/60"
                   : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.18] hover:bg-white/[0.04]"
@@ -42,9 +42,9 @@ export default function DepartmentPicker({
             >
               {/* Custom Checkbox indicator */}
               <div
-                className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all ${
                   isChecked
-                    ? "bg-[#255798] text-white shadow-sm"
+                    ? "bg-[#255798] text-white shadow-sm ring-2 ring-[#255798]/30"
                     : "border border-white/20 bg-white/[0.04]"
                 }`}
               >
@@ -52,12 +52,9 @@ export default function DepartmentPicker({
               </div>
 
               {/* Text info */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 flex items-center">
                 <span className="block text-sm font-semibold text-[#EDEDEF]">
                   {dept.label}
-                </span>
-                <span className="block text-xs text-[#8A8F98] mt-0.5 leading-relaxed">
-                  {dept.shortDesc}
                 </span>
               </div>
             </div>

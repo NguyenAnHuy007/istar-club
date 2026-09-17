@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Star, LogOut, Shield, User as UserIcon } from "lucide-react";
+import Image from "next/image";
+import { Menu, X, LogOut, Shield } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { Role } from "@/types/user";
 
 const navLinks = [
   { label: "Giới thiệu", href: "/#about" },
@@ -16,43 +17,55 @@ const navLinks = [
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const pathname = usePathname();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50">
-      {/* Glass backdrop */}
-      <div className="absolute inset-0 bg-[#050506]/15 backdrop-blur-xl border-b border-white/[0.06]" />
-
-      <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#08090a]/80 backdrop-blur-md border-b border-white/[0.08]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#255798] to-[#4d8ee8] flex items-center justify-center shadow-[0_0_20px_rgba(37,87,152,0.35)] group-hover:shadow-[0_0_30px_rgba(37,87,152,0.55)] transition-shadow duration-300">
-              <Star className="w-4 h-4 text-white fill-white" />
+          {/* Logo & Brand */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="relative w-8 h-8 rounded-lg overflow-hidden shadow-[0_0_12px_rgba(37,87,152,0.4)] group-hover:shadow-[0_0_20px_rgba(37,87,152,0.6)] transition-all duration-300 shrink-0">
+              <Image
+                src="/logo.png"
+                alt="iStar Club Logo"
+                width={32}
+                height={32}
+                className="w-full h-full object-cover"
+                priority
+              />
             </div>
-            <span className="text-lg font-semibold tracking-tight text-[#EDEDEF]">
-              iStar
+            <span className="font-semibold text-base tracking-tight text-[#EDEDEF] group-hover:text-white transition-colors duration-200">
+              iStar Club
             </span>
           </Link>
 
-          {/* Desktop Links */}
+          {/* Desktop Nav Links */}
           <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="px-4 py-2 text-sm text-[#8A8F98] hover:text-[#EDEDEF] transition-colors duration-200 rounded-lg hover:bg-white/[0.05]"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const active = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`px-3.5 py-1.5 rounded-lg text-sm transition-colors duration-200 ${
+                    active
+                      ? "text-[#EDEDEF] bg-white/[0.08] font-medium"
+                      : "text-[#8A8F98] hover:text-[#EDEDEF] hover:bg-white/[0.04]"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </div>
 
           {/* Desktop CTA / User Profile */}
           <div className="hidden md:flex items-center gap-3">
             {isAuthenticated && user ? (
               <div className="flex items-center gap-2">
-                {user.role === Role.ADMIN && (
+                {isAdmin && (
                   <Link
                     href="/admin"
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#4d8ee8] bg-[#255798]/15 border border-[#255798]/30 rounded-lg hover:bg-[#255798]/25 transition-colors duration-200"
@@ -137,7 +150,7 @@ export default function Navbar() {
                       </div>
                     </div>
 
-                    {user.role === Role.ADMIN && (
+                    {isAdmin && (
                       <Link
                         href="/admin"
                         onClick={() => setMobileOpen(false)}

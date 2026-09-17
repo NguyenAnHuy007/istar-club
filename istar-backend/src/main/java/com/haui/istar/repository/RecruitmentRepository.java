@@ -13,4 +13,6 @@ public interface RecruitmentRepository extends JpaRepository<Recruitment, Long> 
     Page<Recruitment> findByIsDeletedFalse(Pageable pageable);
     Optional<Recruitment> findByIdAndIsDeletedFalse(Long id);
     Optional<Recruitment> findByIsActiveTrueAndIsDeletedFalse();
+    boolean existsByNameAndIsDeletedFalse(String name);
+    boolean existsByNameAndIdNotAndIsDeletedFalse(String name, Long id);
 }

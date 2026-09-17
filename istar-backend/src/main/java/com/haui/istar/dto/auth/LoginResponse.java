@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.haui.istar.model.enums.Role;
 
+import java.util.Set;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,4 +20,6 @@ public class LoginResponse {
     private String username;
     private String email;
     private Role role;
+    private Set<String> roles;
+    private Set<String> permissions;
 }

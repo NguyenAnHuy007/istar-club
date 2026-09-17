@@ -35,6 +35,9 @@ public class Recruitment {
     @Builder.Default
     private Boolean isActive = false;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Column(name = "is_deleted", nullable = false)
     @Builder.Default
     private Boolean isDeleted = false;

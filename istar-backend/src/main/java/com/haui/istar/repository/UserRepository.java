@@ -19,6 +19,8 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
+    Optional<User> findByUsername(String username);
+
     Optional<User> findByUsernameAndIsDeletedFalse(String username);
 
     @Query("SELECT u FROM User u WHERE (u.username = :keyword OR u.email = :keyword) AND u.isDeleted = false")

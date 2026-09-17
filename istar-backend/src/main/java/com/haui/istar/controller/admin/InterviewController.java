@@ -20,13 +20,13 @@ public class InterviewController {
     private final InterviewService interviewService;
 
     @GetMapping("/queue")
-    @PreAuthorize("hasAuthority('INTERVIEW_VIEW_QUEUE')")
+    @PreAuthorize("hasAnyAuthority('INTERVIEW_VIEW_QUEUE', 'ROLE_ADMIN', 'PERM_INTERVIEW_VIEW_QUEUE')")
     public ResponseEntity<List<ApplicationDepartmentDto>> getInterviewQueue(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(interviewService.getQueue(principal.getId()));
     }
 
     @PutMapping("/applications/{applicationDepartmentId}/start")
-    @PreAuthorize("hasAuthority('INTERVIEW_CONDUCT')")
+    @PreAuthorize("hasAnyAuthority('INTERVIEW_CONDUCT', 'ROLE_ADMIN', 'PERM_INTERVIEW_CONDUCT')")
     public ResponseEntity<ApplicationDepartmentDto> startInterview(
             @PathVariable Long applicationDepartmentId,
             @AuthenticationPrincipal UserPrincipal principal) {
@@ -34,7 +34,7 @@ public class InterviewController {
     }
 
     @PutMapping("/applications/{applicationDepartmentId}/complete")
-    @PreAuthorize("hasAuthority('INTERVIEW_CONDUCT')")
+    @PreAuthorize("hasAnyAuthority('INTERVIEW_CONDUCT', 'ROLE_ADMIN', 'PERM_INTERVIEW_CONDUCT')")
     public ResponseEntity<ApplicationDepartmentDto> completeInterview(
             @PathVariable Long applicationDepartmentId,
             @RequestBody Map<String, Object> request,
@@ -48,4 +48,23 @@ public class InterviewController {
 
         return ResponseEntity.ok(interviewService.completeInterview(applicationDepartmentId, principal.getId(), score, notes));
     }
+
+    @PutMapping("/applications/{applicationId}/start-multi")
+    @PreAuthorize("hasAnyAuthority('INTERVIEW_CONDUCT', 'ROLE_ADMIN', 'PERM_INTERVIEW_CONDUCT')")
+    public ResponseEntity<com.haui.istar.dto.application.ApplicationFormDto> startMultiInterview(
+            @PathVariable Long applicationId,
+            @RequestBody @jakarta.validation.Valid com.haui.istar.dto.application.StartInterviewRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(interviewService.startMultiInterview(applicationId, request, principal.getId()));
+    }
+
+    @PutMapping("/applications/{applicationId}/complete-multi")
+    @PreAuthorize("hasAnyAuthority('INTERVIEW_CONDUCT', 'ROLE_ADMIN', 'PERM_INTERVIEW_CONDUCT')")
+    public ResponseEntity<com.haui.istar.dto.application.ApplicationFormDto> completeMultiInterview(
+            @PathVariable Long applicationId,
+            @RequestBody @jakarta.validation.Valid com.haui.istar.dto.application.CompleteMultiInterviewRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(interviewService.completeMultiInterview(applicationId, request, principal.getId()));
+    }
 }
+

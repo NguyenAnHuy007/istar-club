@@ -4,10 +4,12 @@ import { useState, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Star, ArrowLeft, LogIn, Loader2, AlertCircle } from "lucide-react";
+import Image from "next/image";
+import { Star, ArrowLeft, LogIn, Loader2, AlertCircle, Clock } from "lucide-react";
 import { LoginFormData } from "@/types/auth";
 import { useAuth } from "@/context/AuthContext";
 import { Role } from "@/types/user";
+import InactiveAccountModal from "@/components/auth/InactiveAccountModal";
 import axios from "axios";
 
 export default function LoginForm() {
@@ -15,6 +17,8 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect");
   const registered = searchParams.get("registered");
+  const pendingActivation = searchParams.get("pending_activation") === "true";
+  const expired = searchParams.get("expired") === "true";
 
   const { login } = useAuth();
 
@@ -24,6 +28,7 @@ export default function LoginForm() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showInactiveModal, setShowInactiveModal] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -46,10 +51,19 @@ export default function LoginForm() {
       }
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        const msg =
-          err.response?.data?.message ||
-          "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!";
-        setErrorMsg(msg);
+        const status = err.response?.status;
+        const msg = err.response?.data?.message || "";
+        if (
+          status === 403 ||
+          msg.includes("ACCOUNT_INACTIVE") ||
+          msg.toLowerCase().includes("chưa được kích hoạt")
+        ) {
+          setShowInactiveModal(true);
+          return;
+        }
+        setErrorMsg(
+          msg || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!"
+        );
       } else {
         setErrorMsg("Đã có lỗi xảy ra. Vui lòng kiểm tra kết nối mạng!");
       }
@@ -83,8 +97,15 @@ export default function LoginForm() {
           {/* Header */}
           <div className="text-center mb-8">
             <motion.div {...fadeUp(0.15)} className="flex justify-center mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#255798] to-[#4d8ee8] flex items-center justify-center shadow-[0_0_30px_rgba(37,87,152,0.4)]">
-                <Star className="w-6 h-6 text-white fill-white" />
+              <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(37,87,152,0.4)]">
+                <Image
+                  src="/logo.png"
+                  alt="iStar Club Logo"
+                  width={48}
+                  height={48}
+                  className="w-full h-full object-cover"
+                  priority
+                />
               </div>
             </motion.div>
             <motion.h1
@@ -99,7 +120,7 @@ export default function LoginForm() {
           </div>
 
           {/* Banner thông báo đăng ký thành công nếu có param */}
-          {registered && (
+          {registered && !pendingActivation && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -107,6 +128,40 @@ export default function LoginForm() {
             >
               <Star className="w-4 h-4 shrink-0 fill-emerald-400 text-emerald-400" />
               <span>Đăng ký tài khoản thành công! Vui lòng đăng nhập.</span>
+            </motion.div>
+          )}
+
+          {/* Banner thông báo đăng ký chờ kích hoạt */}
+          {pendingActivation && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-sm flex items-start gap-2.5 shadow-[0_0_24px_rgba(245,158,11,0.1)]"
+            >
+              <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+              <div className="text-left space-y-0.5">
+                <p className="font-semibold text-amber-300">Đăng ký thành công - Chờ kích hoạt</p>
+                <p className="text-xs text-amber-300/80 leading-relaxed">
+                  Tài khoản của bạn đã được tạo và đang chờ Quản trị viên phê duyệt. Bạn sẽ có thể đăng nhập sau khi được kích hoạt.
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Banner thông báo phiên đăng nhập hết hạn */}
+          {expired && !registered && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-sm flex items-start gap-2.5 shadow-[0_0_24px_rgba(245,158,11,0.08)]"
+            >
+              <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+              <div>
+                <p className="font-semibold text-amber-300">Phiên đăng nhập đã hết hạn</p>
+                <p className="text-xs text-amber-300/80 mt-0.5">
+                  Phiên làm việc của bạn đã kết thúc do hết thời gian hoạt động. Vui lòng đăng nhập lại để tiếp tục thao tác.
+                </p>
+              </div>
             </motion.div>
           )}
 
@@ -205,6 +260,13 @@ export default function LoginForm() {
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Modal Cảnh Báo Tài Khoản Chưa Kích Hoạt */}
+      <InactiveAccountModal
+        isOpen={showInactiveModal}
+        onClose={() => setShowInactiveModal(false)}
+        accountIdentifier={formData.email.trim()}
+      />
     </div>
   );
 }

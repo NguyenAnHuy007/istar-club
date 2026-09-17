@@ -11,5 +11,6 @@ import java.util.Optional;
 @Repository
 public interface PermissionGroupRepository extends JpaRepository<PermissionGroup, Long> {
     Optional<PermissionGroup> findByCode(String code);
+    boolean existsByCode(String code);
     List<PermissionGroup> findByCodeIn(Collection<String> codes);
 }
