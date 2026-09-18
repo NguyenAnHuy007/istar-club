@@ -58,14 +58,30 @@ public class UserServiceImpl implements UserService {
         if (request.getPhoneNumber() != null) user.setPhoneNumber(request.getPhoneNumber());
 
         if (request.getUserDepartments() != null) {
-            user.getUserDepartments().clear();
-            for (UserDepartmentRequest udReq : request.getUserDepartments()) {
-                UserDepartment ud = UserDepartment.builder()
-                        .user(user)
-                        .department(udReq.getDepartment())
-                        .position(udReq.getPosition() != null ? udReq.getPosition() : Position.MEMBER)
-                        .build();
-                user.getUserDepartments().add(ud);
+            java.util.Set<com.haui.istar.model.enums.Department> newDeptEnums = request.getUserDepartments().stream()
+                    .filter(java.util.Objects::nonNull)
+                    .map(com.haui.istar.dto.user.SelfUserDepartmentRequest::getDepartment)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toSet());
+
+            // 1. removeIf các ban bị bỏ
+            user.getUserDepartments().removeIf(ud -> !newDeptEnums.contains(ud.getDepartment()));
+
+            // 2. Lấy danh sách ban hiện có để giữ nguyên position (không cho phép tự đổi position)
+            java.util.Set<com.haui.istar.model.enums.Department> existingDepts = user.getUserDepartments().stream()
+                    .map(UserDepartment::getDepartment)
+                    .collect(java.util.stream.Collectors.toSet());
+
+            // 3. Chỉ thêm các ban mới với Position.MEMBER
+            for (com.haui.istar.model.enums.Department dept : newDeptEnums) {
+                if (!existingDepts.contains(dept)) {
+                    UserDepartment ud = UserDepartment.builder()
+                            .user(user)
+                            .department(dept)
+                            .position(Position.MEMBER)
+                            .build();
+                    user.getUserDepartments().add(ud);
+                }
             }
         }
 

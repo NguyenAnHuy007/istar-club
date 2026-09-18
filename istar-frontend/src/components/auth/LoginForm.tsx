@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Star, ArrowLeft, LogIn, Loader2, AlertCircle, Clock } from "lucide-react";
+import { Star, ArrowLeft, LogIn, Loader2, Clock } from "lucide-react";
 import { LoginFormData } from "@/types/auth";
 import { useAuth } from "@/context/AuthContext";
 import { Role } from "@/types/user";
 import InactiveAccountModal from "@/components/auth/InactiveAccountModal";
 import axios from "axios";
+import { useToast } from "@/context/ToastContext";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -27,12 +28,11 @@ export default function LoginForm() {
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const toast = useToast();
   const [showInactiveModal, setShowInactiveModal] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
     setIsLoading(true);
 
     try {
@@ -61,11 +61,11 @@ export default function LoginForm() {
           setShowInactiveModal(true);
           return;
         }
-        setErrorMsg(
+        toast.error(
           msg || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!"
         );
       } else {
-        setErrorMsg("Đã có lỗi xảy ra. Vui lòng kiểm tra kết nối mạng!");
+        toast.error("Đã có lỗi xảy ra. Vui lòng kiểm tra kết nối mạng!");
       }
     } finally {
       setIsLoading(false);
@@ -162,18 +162,6 @@ export default function LoginForm() {
                   Phiên làm việc của bạn đã kết thúc do hết thời gian hoạt động. Vui lòng đăng nhập lại để tiếp tục thao tác.
                 </p>
               </div>
-            </motion.div>
-          )}
-
-          {/* Banner lỗi */}
-          {errorMsg && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-start gap-2.5"
-            >
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
-              <span>{errorMsg}</span>
             </motion.div>
           )}
 

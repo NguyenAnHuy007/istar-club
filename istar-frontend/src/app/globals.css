@@ -1,4 +1,22 @@
 @import "tailwindcss";
+@import "react-image-crop/dist/ReactCrop.css";
+
+/* Custom overrides for ReactCrop to match iStar theme */
+.ReactCrop__crop-selection {
+  border: 1.5px solid #316ebf !important;
+  box-shadow: 0 0 16px rgba(37, 87, 152, 0.45) !important;
+}
+.ReactCrop__drag-handle {
+  width: 10px !important;
+  height: 10px !important;
+  background-color: #4d8ee8 !important;
+  border: 1.5px solid #ffffff !important;
+  border-radius: 2px !important;
+}
+.ReactCrop__rule-of-thirds-vt,
+.ReactCrop__rule-of-thirds-hz {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
 
 /* ===== Design Tokens as CSS Custom Properties ===== */
 :root {
@@ -67,6 +85,8 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  padding-top: 0.05em;
+  padding-bottom: 0.1em;
 }
 
 .gradient-text-accent {
@@ -152,6 +172,18 @@ body {
 
   50% {
     opacity: 0.2;
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(6px) scale(1.15);
+    opacity: 0.85;
   }
 }
 

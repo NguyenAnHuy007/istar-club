@@ -19,7 +19,7 @@ public class AdminDashboardController {
     private final AdminDashboardService adminDashboardService;
 
     @GetMapping("/stats")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ADMIN', 'PERM_USER_VIEW', 'APPLICATION_VIEW', 'PERM_APPLICATION_VIEW', 'ROLE_RECEPTIONIST', 'ROLE_INTERVIEWER', 'RECRUITMENT_MANAGE', 'PERM_RECRUITMENT_MANAGE')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ADMIN', 'APPLICATION_VIEW', 'PERM_APPLICATION_VIEW', 'RECRUITMENT_MANAGE', 'PERM_RECRUITMENT_MANAGE')")
     public ResponseEntity<ApiResponse<DashboardStatsDto>> getDashboardStats(
             @RequestParam(required = false) Long recruitmentId
     ) {

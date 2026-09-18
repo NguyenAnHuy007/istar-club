@@ -49,8 +49,8 @@ public class RecruitmentServiceImpl implements RecruitmentService {
 
         boolean shouldBeActive = request.getIsActive() != null ? request.getIsActive() : true;
         if (shouldBeActive) {
-            // Đóng đợt tuyển đang hoạt động cũ nếu có
-            recruitmentRepository.findByIsActiveTrueAndIsDeletedFalse().ifPresent(old -> {
+            // Đóng đợt tuyển đang hoạt động cũ nếu có (với Pessimistic Lock)
+            recruitmentRepository.findActiveRecruitmentForUpdate().ifPresent(old -> {
                 old.setIsActive(false);
                 recruitmentRepository.save(old);
             });
@@ -89,7 +89,7 @@ public class RecruitmentServiceImpl implements RecruitmentService {
 
         if (request.getIsActive() != null && !request.getIsActive().equals(recruitment.getIsActive())) {
             if (Boolean.TRUE.equals(request.getIsActive())) {
-                recruitmentRepository.findByIsActiveTrueAndIsDeletedFalse().ifPresent(old -> {
+                recruitmentRepository.findActiveRecruitmentForUpdate().ifPresent(old -> {
                     if (!old.getId().equals(id)) {
                         old.setIsActive(false);
                         recruitmentRepository.save(old);

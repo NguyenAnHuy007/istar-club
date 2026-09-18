@@ -17,6 +17,8 @@ import { notifyOpener } from "@/utils/broadcast";
 import { getStoredArea } from "@/utils/area";
 import { useCommonCodes } from "@/hooks/useCommonCodes";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import { useToast } from "@/context/ToastContext";
+import { processCheckinPhoto } from "@/utils/imageProcessing";
 
 export default function CreateApplicationPopupContent() {
   const [activeRecruitment, setActiveRecruitment] = useState<RecruitmentDto | null>(null);
@@ -48,15 +50,33 @@ export default function CreateApplicationPopupContent() {
     handleDragOver,
     handleDragLeave,
     handleRemoveFile,
-  } = useFileUpload();
+  } = useFileUpload({
+    maxSizeBytes: 10 * 1024 * 1024,
+    autoCompress: false,
+  });
 
   const { coursesList, schoolOptions } = useCommonCodes();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitErrorMsg, setSubmitErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
+  const toast = useToast();
 
-  const errorMsg = submitErrorMsg || fileErrorMsg;
-  const setErrorMsg = setSubmitErrorMsg;
+  const handleIncomingPhoto = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chọn file hình ảnh hợp lệ (PNG, JPG, JPEG, WEBP).");
+      return;
+    }
+    try {
+      setIsProcessingPhoto(true);
+      const processed = await processCheckinPhoto(file);
+      await handleFileSelect(processed);
+      toast.info("Ảnh đã tự động chuyển sang 3:4 (1500×2000px, ~1MB JPG)");
+    } catch {
+      toast.error("Không thể tự động xử lý ảnh. Vui lòng thử lại với ảnh khác.");
+    } finally {
+      setIsProcessingPhoto(false);
+    }
+  };
 
   useEffect(() => {
     const fetchActive = async () => {
@@ -74,12 +94,12 @@ export default function CreateApplicationPopupContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
-    if (!activeRecruitment) { setErrorMsg("Hiện tại không có đợt tuyển nào đang mở."); return; }
-    if (!email.trim() || !phoneNumber.trim()) { setErrorMsg("Vui lòng nhập Email và Số điện thoại."); return; }
-    if (selectedDepts.length === 0) { setErrorMsg("Vui lòng chọn ít nhất một ban ứng tuyển."); return; }
+    if (fileErrorMsg) { toast.error(fileErrorMsg); return; }
+    if (!activeRecruitment) { toast.warning("Hiện tại không có đợt tuyển nào đang mở."); return; }
+    if (!email.trim() || !phoneNumber.trim()) { toast.warning("Vui lòng nhập Email và Số điện thoại."); return; }
+    if (selectedDepts.length === 0) { toast.warning("Vui lòng chọn ít nhất một ban ứng tuyển."); return; }
     if (!knowIStar.trim() || !reasonIStarer.trim()) {
-      setErrorMsg("Vui lòng điền đầy đủ câu hỏi tìm hiểu (Kênh biết đến iStar và Lý do ứng tuyển).");
+      toast.warning("Vui lòng điền đầy đủ câu hỏi tìm hiểu (Kênh biết đến iStar và Lý do ứng tuyển).");
       return;
     }
     setIsSubmitting(true);
@@ -104,15 +124,21 @@ export default function CreateApplicationPopupContent() {
       });
       // Upload avatar if selected
       if (selectedFile && res?.id) {
-        try { await adminApplicationService.uploadAvatar(res.id, selectedFile); } catch { /* non-critical */ }
+        try {
+          await adminApplicationService.uploadAvatar(res.id, selectedFile);
+        } catch (uploadErr) {
+          console.error("Lỗi khi tải ảnh đại diện:", uploadErr);
+          toast.warning("Đã tạo đơn thành công nhưng chưa lưu được ảnh đại diện.");
+        }
       }
       notifyOpener("APPLICATION_CREATED");
       setSuccessMsg("Đã tạo đơn thành công! Đơn có trạng thái ĐÃ CHECK-IN và sẵn sàng phỏng vấn.");
+      toast.success("Tạo đơn offline thành công!");
     } catch (err: unknown) {
       if (isAxiosError(err)) {
-        setErrorMsg(err.response?.data?.message || "Đã có lỗi xảy ra khi tạo đơn.");
+        toast.error(err.response?.data?.message || "Đã có lỗi xảy ra khi tạo đơn.");
       } else {
-        setErrorMsg("Đã có lỗi xảy ra. Vui lòng thử lại.");
+        toast.error("Đã có lỗi xảy ra. Vui lòng thử lại.");
       }
     } finally { setIsSubmitting(false); }
   };
@@ -184,38 +210,58 @@ export default function CreateApplicationPopupContent() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {errorMsg && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /><span>{errorMsg}</span>
-            </div>
-          )}
-
           {/* Avatar Upload */}
           <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4 sm:p-5">
             <h3 className="text-xs font-semibold text-[#8A8F98] uppercase tracking-wider mb-4">Ảnh chân dung ứng viên (tùy chọn)</h3>
             {previewUrl ? (
-              <div className="relative group rounded-xl overflow-hidden border border-white/[0.08] bg-black/30 flex items-center justify-center min-h-[120px]">
+              <div className="relative group rounded-xl overflow-hidden border border-white/[0.08] bg-black/30 flex items-center justify-center min-h-[140px] p-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={previewUrl} alt="Preview" className="max-h-48 max-w-full object-contain" />
-                <button type="button" onClick={handleRemoveFile} className="absolute top-2 right-2 p-1.5 rounded-lg bg-rose-500/80 hover:bg-rose-500 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" title="Xóa ảnh">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <img src={previewUrl} alt="Preview" className="max-h-56 max-w-full object-contain rounded-lg shadow-md aspect-[3/4]" />
+                <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    className="p-1.5 rounded-lg bg-rose-500/80 hover:bg-rose-500 text-white transition-colors cursor-pointer"
+                    title="Xóa ảnh"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ) : isProcessingPhoto ? (
+              <div className="flex flex-col items-center justify-center gap-2 p-8 rounded-xl border border-white/10 bg-white/[0.02]">
+                <Loader2 className="w-6 h-6 text-[#4d8ee8] animate-spin" />
+                <span className="text-xs text-[#8A8F98]">Đang tự động chuẩn hóa ảnh về 3:4 (1500×2000px, ~1MB JPG)...</span>
               </div>
             ) : (
               <div
                 role="button" tabIndex={0}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const f = e.dataTransfer.files?.[0];
+                  if (f) handleIncomingPhoto(f);
+                }}
                 onClick={() => fileInputRef.current?.click()}
                 onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
                 className={`flex flex-col items-center justify-center gap-2 p-6 sm:p-8 rounded-xl border-2 border-dashed transition-all cursor-pointer ${isDragging ? "border-[#255798] bg-[#255798]/10" : "border-white/[0.1] hover:border-white/[0.2] bg-white/[0.02] hover:bg-white/[0.04]"}`}>
                 <ImagePlus className={`w-8 h-8 ${isDragging ? "text-[#4d8ee8]" : "text-[#8A8F98]"}`} />
                 <p className="text-sm text-[#8A8F98] text-center"><span className="text-[#4d8ee8] font-medium">Nhấn để chọn</span> hoặc kéo thả ảnh</p>
-                <p className="text-xs text-[#8A8F98]/60">PNG, JPG, WEBP — Tối đa 5MB</p>
+                <p className="text-xs text-[#8A8F98]/60">PNG, JPG, WEBP (Tự động crop chuẩn 3:4 dọc, 1500×2000px, ~1MB JPG)</p>
               </div>
             )}
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }} />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleIncomingPhoto(f);
+                e.target.value = "";
+              }}
+            />
           </div>
 
           {/* Thông tin cá nhân */}

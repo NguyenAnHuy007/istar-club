@@ -29,10 +29,19 @@ export default function DepartmentPicker({
         {DEPARTMENTS.map((dept) => {
           const isChecked = selected.includes(dept.value);
           return (
-            <div
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={isChecked}
               key={dept.value}
               onClick={() => toggle(dept.value)}
-              className={`flex items-center gap-3.5 p-4 rounded-xl border cursor-pointer select-none transition-all duration-200 min-h-[58px] ${
+              onKeyDown={(e) => {
+                if (e.key === " " || e.key === "Enter") {
+                  e.preventDefault();
+                  toggle(dept.value);
+                }
+              }}
+              className={`flex items-center gap-3.5 p-4 rounded-xl border cursor-pointer select-none transition-all duration-200 min-h-[58px] text-left w-full outline-none focus-visible:ring-2 focus-visible:ring-[#255798] ${
                 isChecked
                   ? "border-[#255798] bg-[#255798]/15 shadow-[0_0_20px_rgba(37,87,152,0.2)] ring-1 ring-[#255798]/40"
                   : hasError
@@ -57,7 +66,7 @@ export default function DepartmentPicker({
                   {dept.label}
                 </span>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

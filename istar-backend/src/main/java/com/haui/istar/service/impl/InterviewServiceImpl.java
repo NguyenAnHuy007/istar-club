@@ -86,6 +86,15 @@ public class InterviewServiceImpl implements InterviewService {
         User interviewer = userRepository.findById(interviewerId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        boolean isAdmin = interviewer.getRoleCodes() != null && interviewer.getRoleCodes().contains("ADMIN");
+        boolean isInterviewerInDept = interviewer.getUserDepartments() != null && interviewer.getUserDepartments().stream()
+                .filter(Objects::nonNull)
+                .anyMatch(ud -> ud.getDepartment() == appDept.getDepartment());
+
+        if (!isAdmin && !isInterviewerInDept) {
+            throw new BadRequestException("Bạn không được phân công phụ trách ban " + appDept.getDepartment().getDisplayName());
+        }
+
         appDept.setStatus(ApplicationStatus.INTERVIEWING);
         appDept.setInterviewer(interviewer);
 
@@ -106,8 +115,8 @@ public class InterviewServiceImpl implements InterviewService {
         ApplicationDepartment appDept = applicationDepartmentRepository.findById(applicationDepartmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn ứng tuyển ban này"));
 
-        if (appDept.getStatus() == ApplicationStatus.APPROVED || appDept.getStatus() == ApplicationStatus.REJECTED) {
-            throw new BadRequestException("Không thể chỉnh sửa điểm phỏng vấn của đơn đã xét duyệt");
+        if (appDept.getStatus() != ApplicationStatus.INTERVIEWING) {
+            throw new BadRequestException("Ban " + appDept.getDepartment().getDisplayName() + " không ở trạng thái đang phỏng vấn");
         }
 
         User interviewer = userRepository.findById(interviewerId)
@@ -121,6 +130,10 @@ public class InterviewServiceImpl implements InterviewService {
 
         if (!isAdmin && !isInterviewerInDept) {
             throw new BadRequestException("Bạn không được phân công phụ trách ban " + appDept.getDepartment().getDisplayName());
+        }
+
+        if (!isAdmin && appDept.getInterviewer() != null && !appDept.getInterviewer().getId().equals(interviewerId)) {
+            throw new BadRequestException("Bạn không phải người đang thực hiện phỏng vấn ban " + appDept.getDepartment().getDisplayName());
         }
 
         if (score == null || score < 0 || score > 10) {
@@ -211,8 +224,8 @@ public class InterviewServiceImpl implements InterviewService {
                 throw new BadRequestException("Bạn không được phân công phụ trách ban " + appDept.getDepartment().getDisplayName());
             }
 
-            if (appDept.getStatus() == ApplicationStatus.INTERVIEWED) {
-                throw new BadRequestException("Ban " + appDept.getDepartment().getDisplayName() + " đã hoàn thành phỏng vấn rồi");
+            if (appDept.getStatus() != ApplicationStatus.CHECKED_IN) {
+                throw new BadRequestException("Ban " + appDept.getDepartment().getDisplayName() + " không ở trạng thái chờ phỏng vấn");
             }
 
             appDept.setStatus(ApplicationStatus.INTERVIEWING);
@@ -253,6 +266,14 @@ public class InterviewServiceImpl implements InterviewService {
                     .filter(d -> d.getId().equals(item.getDepartmentId()))
                     .findFirst()
                     .orElseThrow(() -> new BadRequestException("Không tìm thấy ban ứng tuyển ID " + item.getDepartmentId()));
+
+            if (appDept.getStatus() != ApplicationStatus.INTERVIEWING) {
+                throw new BadRequestException("Ban " + appDept.getDepartment().getDisplayName() + " không ở trạng thái đang phỏng vấn");
+            }
+
+            if (!isAdmin && appDept.getInterviewer() != null && !appDept.getInterviewer().getId().equals(interviewerId)) {
+                throw new BadRequestException("Bạn không phải người đang thực hiện phỏng vấn ban " + appDept.getDepartment().getDisplayName());
+            }
 
             if (!isAdmin && !interviewerDepts.contains(appDept.getDepartment())) {
                 throw new BadRequestException("Bạn không có quyền chấm điểm cho ban " + appDept.getDepartment().getDisplayName());

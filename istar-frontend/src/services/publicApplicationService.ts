@@ -20,20 +20,14 @@ export const publicApplicationService = {
   },
 
   /**
-   * Tải lên ảnh thẻ ứng viên
+   * Tải ảnh chân dung / ảnh thẻ của ứng viên khi nộp đơn online
    */
-  uploadAvatar: async (id: number, file: File): Promise<string> => {
+  uploadAvatar: async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
-
     const response = await apiClient.post<ApiResponse<string>>(
-      `/api/auth/applications/${id}/upload-avatar`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      "/api/auth/applications/upload-avatar",
+      formData
     );
     return response.data.data;
   },

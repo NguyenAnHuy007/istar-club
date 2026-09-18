@@ -32,5 +32,6 @@ public class Permission {
 
     @ManyToMany(mappedBy = "permissions")
     @Builder.Default
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Set<PermissionGroup> permissionGroups = new HashSet<>();
 }

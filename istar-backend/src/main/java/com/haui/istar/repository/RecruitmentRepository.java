@@ -13,6 +13,11 @@ public interface RecruitmentRepository extends JpaRepository<Recruitment, Long> 
     Page<Recruitment> findByIsDeletedFalse(Pageable pageable);
     Optional<Recruitment> findByIdAndIsDeletedFalse(Long id);
     Optional<Recruitment> findByIsActiveTrueAndIsDeletedFalse();
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("SELECT r FROM Recruitment r WHERE r.isActive = true AND r.isDeleted = false")
+    Optional<Recruitment> findActiveRecruitmentForUpdate();
+
     boolean existsByNameAndIsDeletedFalse(String name);
     boolean existsByNameAndIdNotAndIsDeletedFalse(String name, Long id);
 }

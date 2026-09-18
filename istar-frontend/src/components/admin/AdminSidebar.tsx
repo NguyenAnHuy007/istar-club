@@ -16,6 +16,7 @@ import {
   UserPlus,
   Mic,
   ChevronDown,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -27,7 +28,7 @@ interface AdminSidebarProps {
 export default function AdminSidebar({ mobileOpen, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isAdmin, isReceptionist, isInterviewer, logout } = useAuth();
+  const { user, isAdmin, isReceptionist, isInterviewer, isReviewer, logout } = useAuth();
 
   const isRecruitmentSubRoute =
     pathname.startsWith("/admin/recruitments") ||
@@ -61,6 +62,10 @@ export default function AdminSidebar({ mobileOpen, onClose }: AdminSidebarProps)
             href: "/admin/recruitments",
             icon: CalendarRange,
           },
+        ]
+      : []),
+    ...(isAdmin || isReviewer
+      ? [
           {
             label: "Đơn ứng tuyển",
             href: "/admin/applications",
@@ -68,11 +73,15 @@ export default function AdminSidebar({ mobileOpen, onClose }: AdminSidebarProps)
           },
         ]
       : []),
-    {
-      label: "Phỏng vấn",
-      href: "/admin/interview",
-      icon: Mic,
-    },
+    ...((!isReviewer || isAdmin || isReceptionist || isInterviewer)
+      ? [
+          {
+            label: "Phỏng vấn",
+            href: "/admin/interview",
+            icon: Mic,
+          },
+        ]
+      : []),
   ];
 
   const sidebarContent = (
@@ -80,7 +89,7 @@ export default function AdminSidebar({ mobileOpen, onClose }: AdminSidebarProps)
       {/* Logo */}
       <div className="flex items-center justify-between px-5 h-16 border-b border-white/[0.06]">
         <Link
-          href={isAdmin ? "/admin" : "/admin/interview"}
+          href={isAdmin ? "/admin" : (isReviewer && !isReceptionist && !isInterviewer ? "/admin/applications" : "/admin/interview")}
           className="flex items-center gap-2.5 group"
           onClick={onClose}
         >
@@ -264,6 +273,31 @@ export default function AdminSidebar({ mobileOpen, onClose }: AdminSidebarProps)
             />
             <span className="font-medium">Người dùng</span>
             {isActive("/admin/users") && (
+              <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#4d8ee8] shadow-[0_0_8px_rgba(77,142,232,0.6)]" />
+            )}
+          </Link>
+        )}
+
+        {/* Trang chủ - Chỉ Admin */}
+        {isAdmin && (
+          <Link
+            href="/admin/homepage"
+            onClick={onClose}
+            className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-all duration-200 group ${
+              isActive("/admin/homepage")
+                ? "bg-[#255798]/15 text-[#EDEDEF] shadow-[inset_0_0_0_1px_rgba(37,87,152,0.3)]"
+                : "text-[#8A8F98] hover:text-[#EDEDEF] hover:bg-white/[0.04]"
+            }`}
+          >
+            <Globe
+              className={`w-[18px] h-[18px] flex-shrink-0 transition-colors duration-200 ${
+                isActive("/admin/homepage")
+                  ? "text-[#4d8ee8]"
+                  : "text-[#8A8F98] group-hover:text-[#EDEDEF]"
+              }`}
+            />
+            <span className="font-medium">Trang chủ</span>
+            {isActive("/admin/homepage") && (
               <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#4d8ee8] shadow-[0_0_8px_rgba(77,142,232,0.6)]" />
             )}
           </Link>

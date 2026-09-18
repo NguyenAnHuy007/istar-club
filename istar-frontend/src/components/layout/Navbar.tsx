@@ -23,9 +23,9 @@ export default function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#08090a]/80 backdrop-blur-md border-b border-white/[0.08]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="relative flex items-center justify-between h-16">
           {/* Logo & Brand */}
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link href="/" className="flex items-center gap-3 group shrink-0">
             <div className="relative w-8 h-8 rounded-lg overflow-hidden shadow-[0_0_12px_rgba(37,87,152,0.4)] group-hover:shadow-[0_0_20px_rgba(37,87,152,0.6)] transition-all duration-300 shrink-0">
               <Image
                 src="/logo.png"
@@ -41,8 +41,8 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Nav Links */}
-          <div className="hidden md:flex items-center gap-1">
+          {/* Desktop Nav Links - Căn giữa tuyệt đối so với khung trang */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 pointer-events-auto">
             {navLinks.map((link) => {
               const active = pathname === link.href;
               return (
@@ -61,22 +61,22 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Desktop CTA / User Profile */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Desktop CTA / User Profile - Đồng bộ chiều cao h-9 */}
+          <div className="hidden md:flex items-center gap-2.5 shrink-0">
             {isAuthenticated && user ? (
               <div className="flex items-center gap-2">
                 {isAdmin && (
                   <Link
                     href="/admin"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#4d8ee8] bg-[#255798]/15 border border-[#255798]/30 rounded-lg hover:bg-[#255798]/25 transition-colors duration-200"
+                    className="h-9 inline-flex items-center gap-1.5 px-3 text-xs font-medium text-[#4d8ee8] bg-[#255798]/15 border border-[#255798]/30 rounded-lg hover:bg-[#255798]/25 transition-colors duration-200"
                   >
                     <Shield className="w-3.5 h-3.5" />
                     <span>Trang Quản trị</span>
                   </Link>
                 )}
 
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06]">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#255798] to-[#4d8ee8] flex items-center justify-center text-xs font-bold text-white">
+                <div className="h-9 flex items-center gap-2 px-3 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-[#255798] to-[#4d8ee8] flex items-center justify-center text-[10px] font-bold text-white shrink-0">
                     {user.username.charAt(0).toUpperCase()}
                   </div>
                   <span className="text-xs text-[#EDEDEF] max-w-[120px] truncate font-medium">
@@ -87,7 +87,7 @@ export default function Navbar() {
                 <button
                   onClick={logout}
                   title="Đăng xuất"
-                  className="p-2 text-[#8A8F98] hover:text-red-400 hover:bg-white/[0.05] rounded-lg transition-colors duration-200"
+                  className="h-9 w-9 inline-flex items-center justify-center text-[#8A8F98] hover:text-red-400 hover:bg-white/[0.05] rounded-lg transition-colors duration-200"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -95,7 +95,7 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-[#255798] rounded-lg hover:bg-[#316ebf] transition-all duration-200 shadow-[0_0_0_1px_rgba(37,87,152,0.5),0_4px_12px_rgba(37,87,152,0.35),inset_0_1px_0_0_rgba(255,255,255,0.2)] hover:shadow-[0_0_0_1px_rgba(37,87,152,0.6),0_8px_24px_rgba(37,87,152,0.45),inset_0_1px_0_0_rgba(255,255,255,0.2)] active:scale-[0.98]"
+                className="h-9 inline-flex items-center justify-center px-4 text-xs font-medium text-white bg-[#255798] rounded-lg hover:bg-[#316ebf] transition-all duration-200 shadow-[0_0_0_1px_rgba(37,87,152,0.5),0_4px_12px_rgba(37,87,152,0.35),inset_0_1px_0_0_rgba(255,255,255,0.2)] hover:shadow-[0_0_0_1px_rgba(37,87,152,0.6),0_8px_24px_rgba(37,87,152,0.45),inset_0_1px_0_0_rgba(255,255,255,0.2)] active:scale-[0.98]"
               >
                 Đăng nhập
               </Link>

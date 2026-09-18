@@ -27,12 +27,13 @@ export default function DepthDonutChart3D({
   const circumference = 2 * Math.PI * radius;
 
   // Compute strokeDasharray and strokeDashoffset for each slice
-  let cumulativePercent = 0;
-  const slices = activeItems.map((item) => {
+  const slices = activeItems.map((item, index) => {
     const fraction = item.count / total;
+    const cumulativePercent = activeItems
+      .slice(0, index)
+      .reduce((sum, prev) => sum + prev.count / total, 0);
     const strokeDasharray = `${fraction * circumference} ${circumference}`;
     const strokeDashoffset = -cumulativePercent * circumference;
-    cumulativePercent += fraction;
 
     return {
       ...item,

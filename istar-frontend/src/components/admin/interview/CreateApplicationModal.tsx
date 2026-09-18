@@ -13,6 +13,7 @@ import { RecruitmentDto } from "@/types/recruitment";
 import { DEPARTMENTS_LIST } from "@/constants/departments";
 import { getStoredArea } from "@/utils/area";
 import { useCommonCodes } from "@/hooks/useCommonCodes";
+import { useToast } from "@/context/ToastContext";
 
 interface CreateApplicationModalProps {
   isOpen: boolean;
@@ -44,7 +45,7 @@ export default function CreateApplicationModal({
 
   const { coursesList, schoolOptions } = useCommonCodes();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const toast = useToast();
 
   const handleDeptToggle = (dept: Department) => {
     setSelectedDepts((prev) =>
@@ -54,25 +55,24 @@ export default function CreateApplicationModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
 
     if (!activeRecruitment) {
-      setErrorMsg("Hiện tại không có đợt tuyển thành viên nào đang mở.");
+      toast.warning("Hiện tại không có đợt tuyển thành viên nào đang mở.");
       return;
     }
 
     if (!email.trim() || !phoneNumber.trim()) {
-      setErrorMsg("Vui lòng nhập Email và Số điện thoại.");
+      toast.warning("Vui lòng nhập Email và Số điện thoại.");
       return;
     }
 
     if (selectedDepts.length === 0) {
-      setErrorMsg("Vui lòng chọn ít nhất một ban ứng tuyển.");
+      toast.warning("Vui lòng chọn ít nhất một ban ứng tuyển.");
       return;
     }
 
     if (!knowIStar.trim() || !reasonIStarer.trim()) {
-      setErrorMsg("Vui lòng điền đầy đủ câu hỏi tìm hiểu (Kênh biết đến iStar và Lý do ứng tuyển).");
+      toast.warning("Vui lòng trả lời đầy đủ 2 câu hỏi tìm hiểu.");
       return;
     }
 
@@ -80,9 +80,9 @@ export default function CreateApplicationModal({
 
     try {
       await interviewService.createApplication({
-        email: email.trim(),
-        firstName: firstName.trim(),
         lastName: lastName.trim(),
+        firstName: firstName.trim(),
+        email: email.trim(),
         phoneNumber: phoneNumber.trim(),
         birthday: birthday || undefined,
         address: address.trim() || undefined,
@@ -97,14 +97,15 @@ export default function CreateApplicationModal({
         reasonIStarer: reasonIStarer.trim(),
       });
 
+      toast.success("Tạo đơn ứng tuyển thành công!");
       onSuccess();
       handleClose();
     } catch (err: unknown) {
       console.error("Lỗi tạo đơn:", err);
       if (isAxiosError(err)) {
-        setErrorMsg(err.response?.data?.message || "Đã có lỗi xảy ra khi tạo đơn.");
+        toast.error(err.response?.data?.message || "Đã có lỗi xảy ra khi tạo đơn.");
       } else {
-        setErrorMsg("Đã có lỗi xảy ra. Vui lòng thử lại.");
+        toast.error("Đã có lỗi xảy ra. Vui lòng thử lại.");
       }
     } finally {
       setIsSubmitting(false);
@@ -124,7 +125,6 @@ export default function CreateApplicationModal({
     setCourse("");
     setArea(getStoredArea() || Area.NINH_BINH);
     setSelectedDepts([]);
-    setErrorMsg(null);
     onClose();
   };
 
@@ -178,13 +178,6 @@ export default function CreateApplicationModal({
 
           {/* Form Content */}
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
-            {errorMsg && (
-              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
-
             {/* Basic Info */}
             {/* Basic Info */}
             <div className="space-y-3">

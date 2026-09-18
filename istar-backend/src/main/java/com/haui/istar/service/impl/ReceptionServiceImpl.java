@@ -71,10 +71,19 @@ public class ReceptionServiceImpl implements ReceptionService {
             return;
         }
 
-        if (application.getStatus() == ApplicationStatus.INTERVIEWED 
+        if (application.getStatus() == ApplicationStatus.INTERVIEWING
+                || application.getStatus() == ApplicationStatus.INTERVIEWED 
                 || application.getStatus() == ApplicationStatus.APPROVED 
                 || application.getStatus() == ApplicationStatus.REJECTED) {
-            throw new BadRequestException("Không thể đánh dấu vắng mặt cho đơn đã phỏng vấn hoặc xét duyệt");
+            throw new BadRequestException("Không thể đánh dấu vắng mặt cho đơn đang/đã phỏng vấn hoặc xét duyệt");
+        }
+
+        if (application.getApplicationDepartments() != null) {
+            boolean anyInterviewing = application.getApplicationDepartments().stream()
+                    .anyMatch(d -> d.getStatus() == ApplicationStatus.INTERVIEWING);
+            if (anyInterviewing) {
+                throw new BadRequestException("Không thể đánh dấu vắng mặt khi có ban đang trong quá trình phỏng vấn");
+            }
         }
 
         application.setStatus(ApplicationStatus.NO_SHOW);

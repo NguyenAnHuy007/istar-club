@@ -4,45 +4,67 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const achievements = [
+import { AchievementSectionConfig, AchievementItem } from "@/types/landing";
+
+const DEFAULT_ACHIEVEMENTS: AchievementItem[] = [
   {
+    id: "ach-1",
     year: "2024",
     title: "Giải Nhất — Liên hoan các nhóm nhảy",
     description: "Cuộc thi quy mô toàn quốc dành cho các nhóm nhảy sinh viên.",
   },
   {
+    id: "ach-2",
     year: "2024",
     title: "Giải Ba — Giọng hát hay sinh viên toàn quốc",
     description: "Đại diện HaUI tỏa sáng tại đấu trường âm nhạc sinh viên.",
   },
   {
+    id: "ach-3",
     year: "2023",
     title: "Giải Nhất — HaUI's Got Talent",
     description: "Chiến thắng thuyết phục tại cuộc thi tài năng lớn nhất trường.",
   },
   {
+    id: "ach-4",
     year: "2023",
     title: "Giải Nhì — Rap Battle Liên trường",
     description: "Thể hiện đẳng cấp rap trong cuộc thi liên trường Hà Nội.",
   },
   {
+    id: "ach-5",
     year: "2022",
     title: "Giải Nhất — Cuộc thi Vũ đạo Sinh viên HN",
     description: "Đại diện xuất sắc của HaUI tại sân chơi vũ đạo thủ đô.",
   },
   {
+    id: "ach-6",
     year: "2022",
     title: "CLB xuất sắc tiêu biểu — HaUI",
     description: "Được nhà trường vinh danh CLB hoạt động xuất sắc nhất năm.",
   },
   {
+    id: "ach-7",
     year: "2021",
     title: "Giải Đặc biệt — Liên hoan Văn nghệ HaUI",
     description: "Giải thưởng cao nhất dành cho tiết mục tổng hợp nghệ thuật.",
   },
 ];
 
-export default function AchievementsSection() {
+export default function AchievementsSection({
+  config,
+}: {
+  config?: AchievementSectionConfig;
+}) {
+  const achievements =
+    config?.items && config.items.length > 0
+      ? config.items
+      : DEFAULT_ACHIEVEMENTS;
+
+  const title = config?.title || "Những dấu ấn rực rỡ";
+  const subtitle =
+    config?.subtitle ||
+    "Hành trình hơn 10 năm với hàng chục giải thưởng lớn nhỏ, minh chứng cho tài năng và sự cống hiến của các thế hệ thành viên iStar.";
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -54,7 +76,7 @@ export default function AchievementsSection() {
       setDirection(dir);
       setCurrentIndex(((index % achievements.length) + achievements.length) % achievements.length);
     },
-    []
+    [achievements.length]
   );
 
   const next = useCallback(() => goTo(currentIndex + 1, 1), [currentIndex, goTo]);
@@ -104,7 +126,7 @@ export default function AchievementsSection() {
     }),
   };
 
-  const current = achievements[currentIndex];
+  const current = achievements[currentIndex] || achievements[0];
 
   return (
     <section id="achievements" className="relative py-12 px-6">
@@ -122,12 +144,11 @@ export default function AchievementsSection() {
           <span className="text-xs font-medium uppercase tracking-widest text-[#255798] mb-4 block">
             Thành tích nổi bật
           </span>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight gradient-text mb-6">
-            Những dấu ấn rực rỡ
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight gradient-text leading-[1.2] pb-2 pt-1 mb-6">
+            {title}
           </h2>
           <p className="max-w-2xl mx-auto text-base text-[#8A8F98] leading-relaxed">
-            Hành trình hơn 10 năm với hàng chục giải thưởng lớn nhỏ, minh chứng cho
-            tài năng và sự cống hiến của các thế hệ thành viên iStar.
+            {subtitle}
           </p>
         </motion.div>
 
@@ -174,16 +195,24 @@ export default function AchievementsSection() {
                   }}
                   className="flex flex-col items-center justify-start text-center p-3.5 sm:p-5 md:p-7 h-full w-full gap-2 sm:gap-3"
                 >
-                  {/* Achievement Image Placeholder - Tỉ lệ 3/4 co giãn đúng chuẩn */}
+                  {/* Achievement Image - Tỉ lệ 3/4 co giãn đúng chuẩn */}
                   <div className="w-full aspect-[3/4] max-h-[240px] sm:max-h-[360px] md:max-h-[480px] rounded-xl bg-white/[0.04] border border-white/[0.08] overflow-hidden relative group shadow-lg flex items-center justify-center shrink-0">
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-[#8A8F98]/40">
-                      <svg className="w-10 h-10 sm:w-12 sm:h-12 opacity-50 mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <path d="m21 15-5-5L5 21" />
-                      </svg>
-                      <span className="text-xs text-[#8A8F98]/60 font-medium">Hình ảnh thành tích</span>
-                    </div>
+                    {current.imageUrl ? (
+                      <img
+                        src={current.imageUrl}
+                        alt={current.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-[#8A8F98]/40">
+                        <svg className="w-10 h-10 sm:w-12 sm:h-12 opacity-50 mb-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <path d="m21 15-5-5L5 21" />
+                        </svg>
+                        <span className="text-xs text-[#8A8F98]/60 font-medium">Hình ảnh thành tích</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Text Content Block */}

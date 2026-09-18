@@ -45,6 +45,22 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
     @Override
     @Transactional
     public ApplicationFormResponse submitApplication(ApplicationFormRequest request) {
+        // Nộp đơn công khai luôn luôn khởi tạo với trạng thái SUBMITTED
+        return doSubmitApplication(request, ApplicationStatus.SUBMITTED);
+    }
+
+    @Override
+    @Transactional
+    public ApplicationFormResponse createOfflineApplication(ApplicationFormRequest request) {
+        // Tạo đơn offline tại bàn lễ tân chỉ cho phép CHECKED_IN hoặc SUBMITTED
+        ApplicationStatus status = request.getStatus() != null ? request.getStatus() : ApplicationStatus.CHECKED_IN;
+        if (status != ApplicationStatus.CHECKED_IN && status != ApplicationStatus.SUBMITTED) {
+            throw new BadRequestException("Trạng thái khởi tạo đơn offline chỉ được là CHỜ PHỎNG VẤN (CHECKED_IN) hoặc ĐÃ NỘP (SUBMITTED)");
+        }
+        return doSubmitApplication(request, status);
+    }
+
+    private ApplicationFormResponse doSubmitApplication(ApplicationFormRequest request, ApplicationStatus initialStatus) {
         // Removed subDepartment validation
 
         // Validate / resolve recruitment
@@ -73,9 +89,6 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
             }
         }
 
-        // Xác định trạng thái khởi tạo: truyền CHECKED_IN khi tạo offline, mặc định là SUBMITTED
-        ApplicationStatus initialStatus = request.getStatus() != null ? request.getStatus() : ApplicationStatus.SUBMITTED;
-
         Application form = Application.builder()
                 .email(request.getEmail())
                 .firstName(request.getFirstName())
@@ -89,8 +102,10 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
                 .knowIStar(request.getKnowIStar())
                 .reasonIStarer(request.getReasonIStarer())
                 .facebookUrl(request.getFacebookUrl())
+                .avatarUrl(request.getAvatarUrl())
                 .recruitment(recruitment)
                 .status(initialStatus)
+                .checkedInAt(initialStatus == ApplicationStatus.CHECKED_IN ? java.time.LocalDateTime.now() : null)
                 .area(request.getArea() != null ? request.getArea() : Area.NINH_BINH)
                 .build();
 
@@ -256,10 +271,20 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ứng viên với id: " + id));
 
         try {
-            String url = FileUploadUtil.saveFile(uploadDir, file);
+            String url = FileUploadUtil.saveFile(uploadDir, "avatars", file);
             form.setAvatarUrl(url);
             repository.save(form);
             return url;
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi lưu file ảnh đại diện: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public String uploadPublicAvatar(MultipartFile file) {
+        FileUploadUtil.validateAvatar(file);
+        try {
+            return FileUploadUtil.saveFile(uploadDir, "avatars", file);
         } catch (IOException e) {
             throw new RuntimeException("Lỗi lưu file ảnh đại diện: " + e.getMessage());
         }

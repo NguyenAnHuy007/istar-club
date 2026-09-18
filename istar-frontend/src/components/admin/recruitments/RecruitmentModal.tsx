@@ -8,6 +8,7 @@ import adminRecruitmentService from "@/services/adminRecruitmentService";
 import FilterDatePicker from "@/components/admin/common/FilterDatePicker";
 import RichTextEditor from "@/components/common/RichTextEditor";
 import { isAxiosError } from "axios";
+import { useToast } from "@/context/ToastContext";
 
 interface RecruitmentModalProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ export default function RecruitmentModal({
     description: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const toast = useToast();
 
   // Sync formData safely with useEffect when modal opens or recruitment changes
   useEffect(() => {
@@ -42,7 +43,6 @@ export default function RecruitmentModal({
         isActive: recruitment ? recruitment.isActive : true,
         description: recruitment?.description || "",
       });
-      setErrorMsg(null);
     }
   }, [isOpen, recruitment]);
 
@@ -53,17 +53,16 @@ export default function RecruitmentModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      setErrorMsg("Tên đợt tuyển thành viên không được để trống.");
+      toast.warning("Tên đợt tuyển thành viên không được để trống.");
       return;
     }
 
     if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
-      setErrorMsg("Ngày bắt đầu không được sau ngày kết thúc.");
+      toast.warning("Ngày bắt đầu không được sau ngày kết thúc.");
       return;
     }
 
     setIsSubmitting(true);
-    setErrorMsg(null);
 
     try {
       if (isEditMode && recruitment) {
@@ -76,7 +75,7 @@ export default function RecruitmentModal({
     } catch (error: unknown) {
       console.error("Lỗi lưu đợt tuyển:", error);
       const msg = isAxiosError(error) ? error.response?.data?.message : null;
-      setErrorMsg(msg || "Đã có lỗi xảy ra khi lưu đợt tuyển thành viên.");
+      toast.error(msg || "Đã có lỗi xảy ra khi lưu đợt tuyển thành viên.");
     } finally {
       setIsSubmitting(false);
     }
@@ -130,13 +129,6 @@ export default function RecruitmentModal({
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
-            {errorMsg && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/25 rounded-xl text-xs text-rose-400 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
-
             {/* Campaign Name */}
             <div>
               <label className="form-label">

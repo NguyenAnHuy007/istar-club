@@ -66,13 +66,15 @@ public class AuthServiceImpl implements AuthService {
         permissionGroupRepository.findByCode("MEMBER").ifPresent(mg -> user.getPermissionGroups().add(mg));
 
         if (request.getUserDepartments() != null) {
-            for (UserDepartmentRequest udReq : request.getUserDepartments()) {
-                UserDepartment ud = UserDepartment.builder()
-                        .user(user)
-                        .department(udReq.getDepartment())
-                        .position(udReq.getPosition() != null ? udReq.getPosition() : Position.MEMBER)
-                        .build();
-                user.getUserDepartments().add(ud);
+            for (com.haui.istar.dto.user.SelfUserDepartmentRequest udReq : request.getUserDepartments()) {
+                if (udReq != null && udReq.getDepartment() != null) {
+                    UserDepartment ud = UserDepartment.builder()
+                            .user(user)
+                            .department(udReq.getDepartment())
+                            .position(Position.MEMBER)
+                            .build();
+                    user.getUserDepartments().add(ud);
+                }
             }
         }
 

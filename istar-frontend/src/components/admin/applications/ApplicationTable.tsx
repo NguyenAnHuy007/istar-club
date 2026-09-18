@@ -55,8 +55,10 @@ export default function ApplicationTable({
     return sortDirection === "ASC" ? " ↑" : " ↓";
   };
 
-  const thClass =
-    "px-4 py-3.5 text-left text-xs font-semibold text-[#8A8F98] uppercase tracking-wider cursor-pointer hover:text-[#EDEDEF] transition-colors whitespace-nowrap";
+  const getAriaSort = (field: string): "ascending" | "descending" | "none" => {
+    if (sortBy !== field) return "none";
+    return sortDirection === "ASC" ? "ascending" : "descending";
+  };
 
   if (isLoading) {
     return (
@@ -91,28 +93,56 @@ export default function ApplicationTable({
         <table className="w-full text-sm text-left min-w-[960px]">
           <thead className="bg-white/[0.04] border-b border-white/[0.08]">
             <tr>
-              <th className="px-3 sm:px-4 py-3.5 text-xs font-semibold text-[#8A8F98] w-12 text-center whitespace-nowrap">
+              <th scope="col" className="px-3 sm:px-4 py-3.5 text-xs font-semibold text-[#8A8F98] w-12 text-center whitespace-nowrap">
                 STT
               </th>
-              <th onClick={() => onSort("firstName")} className={thClass}>
-                Ứng viên {getSortIcon("firstName")}
+              <th scope="col" aria-sort={getAriaSort("firstName")} className="px-3 sm:px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                <button
+                  type="button"
+                  onClick={() => onSort("firstName")}
+                  className="inline-flex items-center gap-1 text-[#8A8F98] hover:text-[#EDEDEF] transition-colors focus-visible:outline-none focus-visible:text-white"
+                >
+                  <span>Ứng viên</span>
+                  {getSortIcon("firstName")}
+                </button>
               </th>
-              <th onClick={() => onSort("email")} className={thClass}>
-                Email & SĐT {getSortIcon("email")}
+              <th scope="col" aria-sort={getAriaSort("email")} className="px-3 sm:px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                <button
+                  type="button"
+                  onClick={() => onSort("email")}
+                  className="inline-flex items-center gap-1 text-[#8A8F98] hover:text-[#EDEDEF] transition-colors focus-visible:outline-none focus-visible:text-white"
+                >
+                  <span>Email & SĐT</span>
+                  {getSortIcon("email")}
+                </button>
               </th>
-              <th className="px-3 sm:px-4 py-3.5 text-left text-xs font-semibold text-[#8A8F98] uppercase tracking-wider whitespace-nowrap">
+              <th scope="col" className="px-3 sm:px-4 py-3.5 text-left text-xs font-semibold text-[#8A8F98] uppercase tracking-wider whitespace-nowrap">
                 Nguyện vọng Ban
               </th>
-              <th onClick={() => onSort("status")} className={thClass}>
-                Trạng thái {getSortIcon("status")}
+              <th scope="col" aria-sort={getAriaSort("status")} className="px-3 sm:px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                <button
+                  type="button"
+                  onClick={() => onSort("status")}
+                  className="inline-flex items-center gap-1 text-[#8A8F98] hover:text-[#EDEDEF] transition-colors focus-visible:outline-none focus-visible:text-white"
+                >
+                  <span>Trạng thái</span>
+                  {getSortIcon("status")}
+                </button>
               </th>
-              <th className="px-3 sm:px-4 py-3.5 text-left text-xs font-semibold text-[#8A8F98] uppercase tracking-wider whitespace-nowrap">
+              <th scope="col" className="px-3 sm:px-4 py-3.5 text-left text-xs font-semibold text-[#8A8F98] uppercase tracking-wider whitespace-nowrap">
                 Đợt tuyển
               </th>
-              <th onClick={() => onSort("createdAt")} className={thClass}>
-                Ngày nộp {getSortIcon("createdAt")}
+              <th scope="col" aria-sort={getAriaSort("createdAt")} className="px-3 sm:px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                <button
+                  type="button"
+                  onClick={() => onSort("createdAt")}
+                  className="inline-flex items-center gap-1 text-[#8A8F98] hover:text-[#EDEDEF] transition-colors focus-visible:outline-none focus-visible:text-white"
+                >
+                  <span>Ngày nộp</span>
+                  {getSortIcon("createdAt")}
+                </button>
               </th>
-              <th className="px-3 sm:px-4 py-3.5 text-right text-xs font-semibold text-[#8A8F98] uppercase tracking-wider whitespace-nowrap">
+              <th scope="col" className="px-3 sm:px-4 py-3.5 text-right text-xs font-semibold text-[#8A8F98] uppercase tracking-wider whitespace-nowrap">
                 Thao tác
               </th>
             </tr>

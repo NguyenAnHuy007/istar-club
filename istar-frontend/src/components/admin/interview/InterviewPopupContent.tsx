@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
   Mail,
@@ -415,18 +416,41 @@ export default function InterviewPopupContent({ applicationId }: InterviewPopupC
         </div>
       </header>
 
-      {/* Action Alert Banner */}
-      {actionMessage && (
-        <div className={`px-4 sm:px-6 py-2.5 text-xs flex items-center justify-between ${
-          actionMessage.type === "success" ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
-        }`}>
-          <div className="flex items-center gap-2">
-            {actionMessage.type === "success" ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
-            <span>{actionMessage.text}</span>
-          </div>
-          <button onClick={() => setActionMessage(null)} className="opacity-70 hover:opacity-100 cursor-pointer p-1">✕</button>
-        </div>
-      )}
+      {/* Floating Top Action Toast — Zero layout shift */}
+      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] max-w-lg w-full px-4 pointer-events-none">
+        <AnimatePresence>
+          {actionMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.94 }}
+              transition={{ duration: 0.25 }}
+              className={`pointer-events-auto p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs backdrop-blur-xl shadow-2xl ${
+                actionMessage.type === "success"
+                  ? "bg-[#0b1612]/95 border-emerald-500/30 text-emerald-300 shadow-[0_8px_30px_rgba(16,185,129,0.2)]"
+                  : "bg-[#180c0e]/95 border-rose-500/30 text-rose-300 shadow-[0_8px_30px_rgba(244,63,94,0.2)]"
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                {actionMessage.type === "success" ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                )}
+                <span className="font-medium truncate">{actionMessage.text}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActionMessage(null)}
+                className="p-1 rounded-md opacity-70 hover:opacity-100 hover:bg-white/[0.08] transition-colors cursor-pointer shrink-0"
+                title="Đóng"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Body */}
       <div className="flex-1 p-3.5 sm:p-6 max-w-5xl mx-auto w-full space-y-4 sm:space-y-6">

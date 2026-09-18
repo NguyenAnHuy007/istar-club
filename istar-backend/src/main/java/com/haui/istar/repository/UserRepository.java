@@ -30,6 +30,8 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     boolean existsByEmail(String email);
 
+    long countByIsDeletedFalse();
+
     // --- Pessimistic Lock queries để tránh Race Condition ---
     // Dùng SELECT ... FOR UPDATE: lock các row có position tương ứng
     // trong suốt transaction hiện tại, đảm bảo không có 2 thread cùng

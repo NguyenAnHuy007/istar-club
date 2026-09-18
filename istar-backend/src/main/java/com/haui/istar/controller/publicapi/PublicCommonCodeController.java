@@ -53,7 +53,8 @@ public class PublicCommonCodeController {
     @GetMapping("/recent-courses")
     public ResponseEntity<ApiResponse<List<CommonCodeDto>>> getRecentCourses(
             @RequestParam(name = "limit", defaultValue = "6") int limit) {
-        List<CommonCodeDto> courses = commonCodeService.getRecentCourses(limit);
+        int safeLimit = Math.max(1, Math.min(limit, 50));
+        List<CommonCodeDto> courses = commonCodeService.getRecentCourses(safeLimit);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách khóa gần nhất thành công", courses));
     }
 }

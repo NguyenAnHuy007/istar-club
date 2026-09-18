@@ -73,6 +73,9 @@ Dành riêng cho **Chấm điểm phỏng vấn** (`/admin/interview/[id]`) và 
 - **Lịch chọn Ngày sinh chuẩn UI Kit**: Tích hợp `FilterDatePicker` chuẩn dark glass thay cho native date input, hỗ trợ chọn nhanh Tháng và Năm trực tiếp trên thanh điều hướng (quá khứ 70 năm) giúp việc chọn ngày sinh sinh viên nhanh chóng chỉ với 1-2 click.
 - **Icon tiêu đề phân định rõ ngữ nghĩa**: Từng phần được trang bị icon tương ứng thay vì dùng chung: `User` (Thông tin cá nhân), `GraduationCap` (Thông tin học tập), `Compass` (Nguyện vọng tham gia), `HelpCircle` (Câu hỏi tìm hiểu), `MapPin` (Địa điểm / Cơ sở phỏng vấn).
 - **Lựa chọn Cơ sở phỏng vấn**: Tích hợp 2 thẻ lựa chọn trực quan: `Cơ sở Ninh Bình` và `Cơ sở Hà Nội`.
+- **Đơn giản hóa form nộp đơn công khai**:
+  - Không yêu cầu tải ảnh thẻ/chân dung tại trang `/apply` công khai nhằm tối giản thao tác cho ứng viên sinh viên. Ảnh chân dung sẽ được chụp/tải lên tại bước Check-in trực tiếp tại bàn lễ tân hoặc khi tạo đơn offline.
+  - File component `AvatarUploader.tsx` vẫn được lưu trữ nguyên vẹn trong codebase phục vụ tái sử dụng khi cần.
 - **Liên kết danh mục động**: Tự động bind đợt tuyển active (`publicRecruitmentService.getActiveRecruitment()`), danh sách trường/khoa HaUI từ backend API.
 
 ### 2.4 Quản Lý Cơ Sở Phỏng Vấn & Bộ Lọc Không Gian Tuyển Chọn (`Area`)
@@ -174,7 +177,18 @@ Dành riêng cho **Chấm điểm phỏng vấn** (`/admin/interview/[id]`) và 
 |---|---|---|---|
 | **Quản trị viên (`ADMIN`)** | Toàn bộ ứng viên mọi đợt tuyển (mặc định đợt active) | - `SUBMITTED`/`NO_SHOW`: **Check-in** (modal chụp ảnh)<br>- `CHECKED_IN`/`INTERVIEWING`: **Phỏng vấn** (mở popup)<br>- `INTERVIEWED`: **Duyệt đơn** & **Từ chối đơn** (icon + text) | - Báo vắng mặt (chỉ `SUBMITTED`, `CHECKED_IN`)<br>- Duyệt hàng loạt (chỉ `INTERVIEWED`)<br>- Từ chối hàng loạt (chỉ `INTERVIEWED`) |
 | **Lễ tân (`RECEPTIONIST`)** | Toàn bộ ứng viên đợt active | - Header: **Tạo đơn mới (Offline)** (mở popup)<br>- `SUBMITTED`: **Check-in** & **Vắng mặt**<br>- `CHECKED_IN`: **Vắng mặt**<br>- `NO_SHOW`: **Check-in lại**<br>- Click dòng: Mở popup giao diện rút gọn (các nút nghiệp vụ đưa lên Header, ẩn khối điểm & chấm điểm; chỉ sửa khi `SUBMITTED`/`CHECKED_IN`/`NO_SHOW`) | - Báo vắng mặt (chỉ `SUBMITTED`, `CHECKED_IN`)<br>*(Bỏ Check-in hàng loạt vì cần chụp ảnh)* |
+| **Xét duyệt viên (`REVIEWER`)** | Toàn bộ ứng viên mọi đợt tuyển (ưu tiên đợt active) | - Truy cập `/admin/applications` và menu Đơn ứng tuyển trên sidebar<br>- Xem chi tiết ứng viên, theo dõi điểm số phỏng vấn của các ban<br>- Thao tác duyệt (`APPROVED`) / từ chối (`REJECTED`) ứng viên | Hỗ trợ duyệt / từ chối đơn trúng tuyển |
 | **Phỏng vấn viên (`INTERVIEWER`)** | Ứng viên `CHECKED_IN` / `INTERVIEWING` thuộc đợt active mà ban mình **chưa chấm điểm** (`deptNotInterviewedOnly`) | - **Phỏng vấn** / **Tiếp tục PV** (mở popup chấm điểm)<br>- Nếu đang bị ban khác PV: Dòng bị mờ (`opacity-40`), `cursor-not-allowed`, hiển thị tên ban đang PV để tránh tranh chấp | Không có quyền thao tác hàng loạt |
+
+---
+
+### 3.1 Khả Năng Tiếp Cận & Chuẩn Hóa UI/UX (Accessibility & Rewrites)
+- **Tối Ưu Thẻ Chọn Ban Ứng Tuyển (`DepartmentPicker.tsx`)**:
+  - Chuyển đổi từ `<div>` sang `<button type="button" role="checkbox" aria-checked=... tabIndex={0}>` hỗ trợ hoàn chỉnh tương tác qua bàn phím (`Enter`, `Space`) và trình đọc màn hình (Screen Readers).
+- **Tiêu Đề Cột Sắp Xếp Trợ Năng (`ApplicationTable.tsx`)**:
+  - Tiêu đề cột có tính năng sort được bọc bằng `<button>` kèm `aria-sort` (`ascending`, `descending`, `none`) tuân thủ nghiêm ngặt WAI-ARIA.
+- **Rewrite Proxy Đường Dẫn Tĩnh (`next.config.ts`)**:
+  - Khai báo cấu hình `rewrites()` định tuyến `/uploads/:path*` tới `process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"` giúp hiển thị ảnh thẻ avatar ứng viên liền mạch, triệt tiêu sự phụ thuộc CORS trên frontend.
 
 ---
 
@@ -231,3 +245,101 @@ Kết nối thời gian thực qua API `GET /api/admin/dashboard/stats`:
   3. `GlowingAreaChart`: Đường cong spline neon 7 ngày gần nhất kèm trung bình đơn/ngày.
   4. `SchoolRankingCard`: Xếp hạng Top trường HaUI kèm thẻ khóa học K18, K19... đồng bộ.
 - **Dự phòng sự cố**: Bộ đệm `DEFAULT_STATS` hiển thị cảnh báo nhã nhặn khi API ngắt kết nối mà không làm sập layout.
+
+---
+
+## 7. Quản Trị Trang Chủ (`/admin/homepage`) & Tối Ưu Header/Hero
+
+### 7.1 Cải Tiến Giao Diện Header & Hero
+- **Header căn giữa tuyệt đối (`Navbar.tsx`)**: Đặt container trong trạng thái `relative`, cụm liên kết điều hướng desktop (Trang chủ, Giới thiệu, Các ban, Thành tích, Tuyển quân) được định vị `absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2` căn chính giữa tuyệt đối theo tâm màn hình, không bị lệch khi logo hoặc tên tài khoản thay đổi độ dài.
+- **Đồng bộ chiều cao cụm nút Header**: Toàn bộ các phần tử góc phải (`AdminTopBar` shortcut, tag username, nút Đăng xuất, nút Đăng nhập) được cố định chiều cao `h-9` (36px).
+- **Đồng bộ kích thước nút CTA Hero (`HeroSection.tsx`)**: Hai nút "Ứng tuyển ngay" và "Tìm hiểu thêm" được thiết lập cùng độ rộng `w-full sm:w-44` để tạo sự cân xứng thị giác hoàn hảo.
+- **Sửa lỗi clipping dọc chữ tiêu đề gradient**: Bổ sung `padding-top: 0.05em; padding-bottom: 0.1em;` cho `.gradient-text` trong `globals.css` và kết hợp `leading-[1.2] pb-2 pt-1` tại các thẻ `h2` trong `DepartmentsSection` và `AchievementsSection`.
+
+### 7.2 Quản Lý Nội Dung Trang Chủ Động (`/admin/homepage`)
+Trang quản trị tập trung Dark Glass với 4 tab trực quan dành riêng cho `ADMIN`:
+1. **Tab Hero Section**: Chỉnh sửa văn bản giới thiệu phụ và tải lên/thay đổi ảnh tập thể CLB.
+2. **Tab About Section**: Tùy biến 3 đoạn văn giới thiệu tổng quan và cập nhật 3 ảnh bento grid hoạt động.
+3. **Tab Departments Section**:
+   - Cho phép sửa tiêu đề ("Bốn ban — Một iStar") và phụ đề.
+   - Quản lý danh sách các ban linh hoạt: **cho phép từ 2 đến 6 ban** (thêm/xóa/sửa).
+   - Tùy biến biểu tượng (kho 12 Lucide icons nghệ thuật) và bảng màu thương hiệu (6 bộ preset gradient màu sắc kèm glow).
+4. **Tab Achievements Section**:
+   - Cho phép sửa tiêu đề ("Những dấu ấn rực rỡ") và phụ đề.
+   - Thêm, sửa, xóa các mốc thành tích (Năm, Tiêu đề giải thưởng, Mô tả chi tiết, Ảnh minh chứng thành tích).
+- **Khả năng dự phòng cao (High Resilience)**: Trang chủ công khai (`src/app/(public)/page.tsx`) nạp cấu hình SSR qua API `GET /api/public/homepage` với `next: { revalidate: 60 }`. Nếu backend chưa chạy hoặc xảy ra sự cố mạng, các section tự động fallback về bộ dữ liệu mặc định nguyên bản, đảm bảo 100% thời gian hoạt động.
+
+### 7.3 Tối Ưu Mobile & Hệ Thống Animation 3D Hiện Đại
+- **Khắc phục lỗi hiển thị Mobile**:
+  - **HeroSection Scroll Indicator**: Chuyển từ định vị `absolute bottom-8` (dễ bị tràn hoặc che khuất bởi photo frame trên mobile) sang layout dòng tự nhiên (`flow layout`, `mt-6 md:mt-10`), loại bỏ triệt để lỗi đè content trên mọi kích thước màn hình.
+  - **Khung ảnh Photo Frame & Corner Accents**: Thu nhỏ góc trang trí `w-10 h-10 md:w-16 md:h-16`, căn chỉnh padding dọc `pt-20 pb-6 md:pt-24 md:pb-16` giúp nội dung thoáng đãng trên màn hình nhỏ.
+  - **Bento Grid & Thống Kê (`AboutSection`)**: Typography responsive đa cấp `text-2xl sm:text-3xl md:text-4xl lg:text-5xl`. Lưới thống kê thu gọn khoảng cách `gap-3 md:gap-4`, padding ô `py-5 px-3 md:py-6 md:px-4`.
+  - **Thẻ Các Ban (`DepartmentsSection`)**: Padding linh hoạt `p-5 md:p-6 lg:p-8`, xử lý tự nhiên trên màn hình cảm ứng.
+  - **Chân trang (`Footer`)**: Thu nhỏ khoảng cách `gap-6 md:gap-8`, bổ sung `break-words` cho địa chỉ chống tràn layout.
+  - **Thành tích nổi bật (`AchievementsSection`)**: **Giữ nguyên 100% kích thước và tỷ lệ hiển thị** theo đúng yêu cầu nghiệp vụ.
+- **Hệ thống Animation 3D Hiện Đại & Siêu Nhẹ (60 FPS)**:
+  - **Nguyên tắc kỹ thuật**: 100% chuyển động chỉ can thiệp vào `transform` (GPU compositing) và `opacity`, không kích hoạt reflow/repaint của browser; bọc `useInView({ once: true })` chạy duy nhất 1 lần khi cuộn tới.
+  - **Hero Section**: Headline xoay góc 3D perspective (`rotateX(15deg) ➜ 0deg`, `y: 30 ➜ 0`, `scale: 0.97 ➜ 1`). Khung ảnh tập thể lật đa chiều từ mặt phẳng sâu (`perspective(1200px) rotateX(8deg) ➜ 0deg`, `scale: 0.95 ➜ 1`). Scroll indicator hiệu ứng thở ("breathe" `scale: [1, 1.1, 1]`, `opacity: [0.4, 0.8, 0.4]`).
+  - **About Section**: Tiêu đề xoay vào từ trục Y (`rotateY(-5deg) ➜ 0deg`). Ảnh bento lật nhẹ vào vị trí (`rotateX(4deg) ➜ 0deg`, `scale: 0.9 ➜ 1`). Thẻ thống kê bay từ trục Z (`translateZ(-30px) ➜ 0`).
+  - **Departments Section**: Thẻ các ban xoay xen kẽ so le 3D từ hai phía (`rotateY(-8deg / +8deg) ➜ 0deg`, `scale: 0.92 ➜ 1`). Hiệu ứng hover card nghiêng 3D chân thực (`transform: perspective(600px) rotateX(2deg) translateY(-4px)`).
+  - **Global CSS**: Bổ sung class tiện ích `.perspective-container` (`perspective: 1200px`) và keyframe `@keyframes breathe` trong `globals.css`.
+
+### 7.4 Hệ Thống Thông Báo Top Floating Popup (Zero Layout Shift)
+- **Kiến trúc Toast Toàn Cục (`ToastContext.tsx` & `ToastProvider`)**:
+  - Tích hợp tại gốc ứng dụng (`RootLayout` trong `src/app/layout.tsx`).
+  - Container cố định tuyệt đối: `fixed top-6 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none w-full max-w-lg px-4`.
+  - Độc lập 100% khỏi dòng chảy tài liệu (DOM flow) ➜ **triệt tiêu hoàn toàn hiện tượng xô lệch/giật bố cục trang (Cumulative Layout Shift = 0)**.
+  - Dark Glass đa cấp độ:
+    - Success: `bg-[#0b1612]/95 border-emerald-500/30 text-emerald-300 shadow-[0_8px_30px_rgba(16,185,129,0.2)]`
+    - Error: `bg-[#180c0e]/95 border-rose-500/30 text-rose-300 shadow-[0_8px_30px_rgba(244,63,94,0.2)]`
+    - Warning: `bg-[#181207]/95 border-amber-500/30 text-amber-300 shadow-[0_8px_30px_rgba(245,158,11,0.2)]`
+    - Info: `bg-[#080d18]/95 border-[#255798]/40 text-[#EDEDEF] shadow-[0_8px_30px_rgba(37,87,152,0.25)]`
+  - Tự động đóng sau 4 giây (auto-dismiss), hỗ trợ nút `X` đóng nhanh.
+- **Rà soát & Đồng bộ trên toàn bộ dự án**:
+  - `AdminListLayout.tsx`: Chuyển prop `toast` từ in-flow banner sang top floating popup với timer 4s.
+  - `/admin/homepage`: Loại bỏ khối banner `feedback` đẩy trượt các tab, thay thế hoàn toàn bằng `useToast()`.
+  - `InterviewPageContent.tsx` & `InterviewExcelActions.tsx`: Triệt tiêu hoàn toàn hộp thoại `alert(...)` nguyên thủy của trình duyệt, thay thế bằng `toast.warning(...)`, `toast.success(...)`, `toast.error(...)`.
+  - `InterviewPopupContent.tsx` & `InterviewDetailModal.tsx`: Chuyển `actionMessage` sang dạng top floating toast ghim trên đầu, giữ nguyên vẹn vị trí của form chấm điểm.
+  - `RecruitmentModal.tsx`, `UserDetailModal.tsx`, `CreateApplicationModal.tsx`, `/apply`, `/login`: Loại bỏ các khối thông báo lỗi in-flow gây nhảy form, chuyển sang top popup notification.
+
+### 7.5 Tái Cấu Trúc Bố Cục HeroSection (Two-Column Split & Atmospheric Background Glow)
+- **Bố cục 2 Cột Ngang Hàng Trên Desktop (`lg:grid-cols-12`)**:
+  - **Cột Trái (`lg:col-span-5 xl:col-span-5`)**: Canh lề trái hiện đại, tag badge phát sáng dot xanh, headline lớn đa tầng font-bold `gradient-text`, subtitle thoáng đãng, 2 nút CTA đồng chiều rộng `w-full sm:w-44`, dải tag thông số ấn tượng (4 Ban chuyên môn • 80+ Thành viên • 10+ Năm phát triển).
+  - **Cột Phải (`lg:col-span-7 xl:col-span-7`)**:
+    - **Diện tích hiển thị ảnh lớn vượt bậc**: Chiều cao `lg:h-[480px] xl:h-[540px]`, tăng gấp đôi kích thước hiển thị so với bố cục cũ.
+    - **Lớp nền khí quyển phát sáng (`Atmospheric Background Glow`)**: Sử dụng lớp ảnh phản chiếu mờ ảo (`blur-3xl opacity-30 scale-110 -z-10`) phía sau khung ảnh, lan tỏa màu sắc thực của bức ảnh tập thể ra không gian nền.
+    - **Khung kính 3D & Huy hiệu nổi**: 4 góc bo công nghệ viền xanh `#255798`, huy hiệu kính nổi góc dưới *"iStar Club • HaUI"* và châm ngôn *"Tỏa sáng theo cách của bạn"*.
+- **Responsive Mobile & Tablet**: Xếp chồng mượt mà, ảnh hiển thị full width với chiều cao tối ưu `h-[280px] sm:h-[380px]`, nút cuộn mũi tên thở (`breathe`) nằm gọn gàng bên dưới.
+
+### 7.6 Chuẩn Hóa Dropdown, Giới Hạn 10MB & Bộ Công Cụ Chỉnh Sửa Ảnh Toàn Diện (`ImageEditorModal`)
+- **Chuẩn hóa Dropdown Quản trị Trang chủ (`CustomIconSelect` & `CustomColorPresetSelect`)**:
+  - Triệt tiêu hoàn toàn các thẻ `<select>` thô sơ của trình duyệt trong tab "Các ban" tại `/admin/homepage`.
+  - Thay thế bằng Custom Select chuẩn Dark Glass: danh sách trực quan với 12 icon nghệ thuật và 6 pill gradient màu sắc thương hiệu, hỗ trợ click-outside và phím Escape.
+- **Kiểm duyệt Dung lượng 10MB & Định dạng File**:
+  - Client-side validation chặn ngay các file vượt quá 10MB với cảnh báo nổi (`toast.warning(...)`).
+  - Xác thực MIME type và đuôi tệp chỉ cho phép định dạng ảnh hợp lệ (JPG, JPEG, PNG, WEBP, GIF).
+- **Bộ Công Cụ Chỉnh Sửa Ảnh Chuyên Nghiệp (`ImageEditorModal.tsx`)**:
+  - Xây dựng trên nền tảng `react-image-crop` kết hợp xử lý HTML5 Canvas, tương thích React 19 và Next.js 16.
+  - **Khắc phục triệt để lỗi crop & canvas drawing**:
+    - Đồng bộ `convertToPixelCrop` ngay khi load ảnh và khi đổi preset tỷ lệ, giải quyết lỗi người dùng bấm Hoàn tất khi chưa di chuyển khung crop dẫn đến crop bị bỏ qua.
+    - Fallback tự động tính toán pixel crop từ tỷ lệ % nếu `completedCrop` chưa kịp kích hoạt.
+    - Chuẩn hóa định dạng xuất mặc định sang JPEG (`image/jpeg`, `.jpg`) và sanitize tên file (loại bỏ ký tự đặc biệt, dấu tiếng Việt) để tương thích tuyệt đối với backend regex.
+  - **Tỷ lệ cắt ảnh (Aspect Ratio Presets)**: Tự do (Free), 1:1 (Ảnh thẻ / Avatar), 16:9 (Hero banner), 4:3 (Ảnh giới thiệu lớn), 3:4 (Thành tích nổi bật).
+  - **Biến đổi hình học (Transforms)**: Xoay góc 90° (`-90°` / `+90°`), Lật ngang (Flip H), Lật dọc (Flip V).
+  - **Thu phóng & Đổi kích thước (Resize)**: Thanh trượt từ 20% đến 100% kèm hiển thị độ phân giải pixel xuất ra thực tế theo thời gian thực.
+  - **Nén & Tối ưu dung lượng (Compression)**: Điều chỉnh chất lượng chất lượng (10% - 100%), chọn định dạng xuất (WebP, JPEG, PNG), tính toán dung lượng xuất ước tính và % dung lượng tiết kiệm được so với ảnh gốc.
+  - Cảnh báo và ngăn chặn xuất tệp nếu kích thước ước tính vượt ngưỡng 10MB.
+- **Tích Hợp Đồng Bộ & Xử Lý Ảnh Theo Ngữ Cảnh Nghiệp Vụ**:
+  - **Tự động xử lý ảnh chân dung 3:4 dọc (`processCheckinPhoto` trong `imageProcessing.ts`)**:
+    - **Áp dụng đồng bộ cho cả Tạo đơn Offline (`CreateApplicationPopupContent.tsx`) và Check-in (`CheckInModal.tsx`)**: Tự động center-crop về tỉ lệ 3:4 dọc, resize về kích thước chuẩn 1500×2000px, nén chất lượng xấp xỉ 1MB định dạng JPG (`image/jpeg`).
+    - Hoàn toàn tự động, loại bỏ modal chỉnh sửa thủ công để tối ưu tốc độ tác nghiệp của lễ tân.
+    - Cung cấp preview tỉ lệ 3:4 cùng nút xóa ảnh và thông báo toast xác nhận chuẩn hóa thành công.
+  - **Chuẩn hóa Bố cục & Padding Quản lý Trang chủ (`/admin/homepage`)**:
+    - Chuẩn hóa container về `max-w-[1720px] w-full mx-auto pb-12 space-y-6`, đồng bộ tuyệt đối với `AdminListLayout` của tất cả các trang quản trị còn lại (`/admin/applications`, `/admin/interview`, `/admin/users`...).
+    - Loại bỏ lớp padding ngang/dọc trùng lặp (`px-4 sm:px-6 lg:px-8 py-8`) do `<main>` trong `AdminLayout` đã có sẵn padding tiêu chuẩn.
+  - **Khắc phục triệt để lỗi Upload ảnh Quản lý Trang chủ & Tối ưu Bộ nhớ (Zero Orphan Storage)**:
+    - **Cơ chế Tải lên trì hoãn (Deferred Upload on Save)**: Khi người dùng chọn và cắt ảnh trong `ImageEditorModal`, hệ thống **không upload ngay lên server** mà sinh URL xem trước cục bộ (`URL.createObjectURL(processedFile)`). File được đưa vào danh sách chờ (`pendingFiles`). Chỉ khi người dùng nhấn nút *"Lưu thay đổi"* (`handleSave`), các file đang chờ mới được upload đồng loạt lên server và thay thế URL trước khi lưu vào DB. Nếu hủy hoặc rời trang, **0 byte file rác** nào được ghi lên đĩa cứng máy chủ.
+    - **Memoize `ToastContext` & Ổn định `loadConfig`**: Bọc giá trị context của `ToastProvider` bằng `useMemo` và loại bỏ `toast` khỏi dependency của `loadConfig` trong `page.tsx`, triệt tiêu hoàn toàn race condition re-render vòng lặp khiến `loadConfig()` gọi lại API ghi đè xóa sạch URL ảnh vừa chọn.
+    - **Chỉ báo Trạng thái Xem trước (Pending Badges)**: Bổ sung nhãn *"Chờ lưu"* cạnh nút tải ảnh và dot chỉ báo trên nút Lưu khi có ảnh mới đang chờ lưu trữ, đồng thời tự động thu hồi Object URL (`URL.revokeObjectURL`) khi thay đổi hoặc unmount.
+    - **Key-based Image Remounting & Opacity Fallback**: Toàn bộ thẻ `<img>` preview được gán `key={imageUrl}` đảm bảo React tạo mới phần tử sạch sẽ khi đổi ảnh, thay thế `display: none` bằng `opacity: 0.3` giúp giao diện không bị giật hay dính khoảng đen vĩnh viễn.
+

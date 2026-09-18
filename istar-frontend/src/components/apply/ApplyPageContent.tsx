@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   Loader2,
   CalendarX2,
-  AlertCircle,
   ExternalLink,
   User,
   GraduationCap,
@@ -27,6 +26,7 @@ import SelectWithOther, {
 } from "@/components/common/SelectWithOther";
 import FilterDatePicker from "@/components/admin/common/FilterDatePicker";
 import commonCodeService from "@/services/commonCodeService";
+import { useToast } from "@/context/ToastContext";
 import publicRecruitmentService from "@/services/publicRecruitmentService";
 import publicApplicationService from "@/services/publicApplicationService";
 import {
@@ -59,7 +59,7 @@ export default function ApplyPageContent() {
   const [formData, setFormData] = useState<ApplicationFormData>(initialForm);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const toast = useToast();
   const [deptError, setDeptError] = useState(false);
 
   // Trạng thái đợt tuyển active
@@ -144,13 +144,13 @@ export default function ApplyPageContent() {
 
     if (formData.departments.length === 0) {
       setDeptError(true);
+      toast.warning("Vui lòng chọn ít nhất một Ban nghệ thuật ứng tuyển.");
       const element = document.getElementById("dept-picker-section");
       element?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
     setIsSubmitting(true);
-    setSubmitError(null);
 
     try {
       const payload: ApplicationFormRequest = {
@@ -175,10 +175,11 @@ export default function ApplyPageContent() {
 
       await publicApplicationService.submitApplication(payload);
       setSubmitted(true);
+      toast.success("Nộp đơn ứng tuyển thành công!");
     } catch (err: unknown) {
       console.error("Lỗi khi nộp đơn ứng tuyển:", err);
       const msg = isAxiosError(err) ? err.response?.data?.message : null;
-      setSubmitError(msg || "Đã xảy ra lỗi khi nộp đơn. Vui lòng thử lại sau.");
+      toast.error(msg || "Đã xảy ra lỗi khi nộp đơn. Vui lòng thử lại sau.");
     } finally {
       setIsSubmitting(false);
     }
@@ -399,14 +400,6 @@ export default function ApplyPageContent() {
                     dangerouslySetInnerHTML={{ __html: activeRecruitment.description }}
                   />
                 </motion.div>
-              )}
-
-              {/* Submit Error Banner */}
-              {submitError && (
-                <div className="mb-6 p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 text-sm flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                  <span>{submitError}</span>
-                </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-6">

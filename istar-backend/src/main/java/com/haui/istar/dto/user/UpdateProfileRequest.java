@@ -36,7 +36,7 @@ public class UpdateProfileRequest {
     private String address;
 
     @Valid
-    private List<UserDepartmentRequest> userDepartments;
+    private List<SelfUserDepartmentRequest> userDepartments;
 
     @Pattern(regexp = "^$|^(0|\\+84)[0-9]{9,10}$", message = "Số điện thoại không hợp lệ (VD: 0912345678)")
     private String phoneNumber;

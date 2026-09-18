@@ -77,12 +77,18 @@ public class AdminApplicationServiceImpl implements AdminApplicationService {
         Specification<Application> spec = ApplicationSpecification.withCriteria(criteria);
         Page<Application> applicationPage = applicationRepository.findAll(spec, pageable);
 
-        return applicationPage.map(this::mapToDto);
+        return applicationPage.map(app -> mapToDto(app, criteria.getAllowedDepartments()));
     }
 
     @Override
     @Transactional(readOnly = true)
     public ApplicationFormDto getApplicationById(Long id) {
+        return getApplicationById(id, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ApplicationFormDto getApplicationById(Long id, com.haui.istar.security.UserPrincipal principal) {
         Application application = applicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn ứng tuyển với id: " + id));
 
@@ -90,7 +96,41 @@ public class AdminApplicationServiceImpl implements AdminApplicationService {
             throw new ResourceNotFoundException("Đơn ứng tuyển đã bị xóa");
         }
 
-        return mapToDto(application);
+        List<Department> allowedDepartments = null;
+        if (principal != null) {
+            boolean isAdmin = principal.getRoles() != null && principal.getRoles().contains("ADMIN");
+            if (!isAdmin) {
+                boolean isInterviewer = principal.getPermissions() != null
+                        && principal.getPermissions().contains("APPLICATION_VIEW_OWN_DEPT")
+                        && !principal.getPermissions().contains("APPLICATION_VIEW");
+
+                if (isInterviewer) {
+                    // Phỏng vấn viên chỉ được xem đợt tuyển đang active
+                    if (application.getRecruitment() == null || !Boolean.TRUE.equals(application.getRecruitment().getIsActive())) {
+                        throw new ResourceNotFoundException("Đơn ứng tuyển không thuộc đợt tuyển đang hoạt động");
+                    }
+
+                    User user = userRepo.findById(principal.getId()).orElse(null);
+                    if (user != null && user.getUserDepartments() != null) {
+                        allowedDepartments = user.getUserDepartments().stream()
+                                .filter(Objects::nonNull)
+                                .map(ud -> ud.getDepartment())
+                                .filter(Objects::nonNull)
+                                .toList();
+                    }
+
+                    final List<Department> finalAllowed = allowedDepartments;
+                    boolean hasAllowedDept = application.getApplicationDepartments() != null && application.getApplicationDepartments().stream()
+                            .anyMatch(ad -> finalAllowed != null && finalAllowed.contains(ad.getDepartment()));
+
+                    if (!hasAllowedDept) {
+                        throw new ResourceNotFoundException("Bạn không có quyền truy cập đơn ứng tuyển này");
+                    }
+                }
+            }
+        }
+
+        return mapToDto(application, allowedDepartments);
     }
 
     @Override
@@ -295,7 +335,7 @@ public class AdminApplicationServiceImpl implements AdminApplicationService {
         }
 
         try {
-            String url = FileUploadUtil.saveFile(uploadDir, file);
+            String url = FileUploadUtil.saveFile(uploadDir, "avatars", file);
             form.setAvatarUrl(url);
             applicationRepository.save(form);
             return url;
@@ -352,7 +392,7 @@ public class AdminApplicationServiceImpl implements AdminApplicationService {
                 .majorClass(app.getMajorClass())
                 .school(app.getSchool())
                 .area(app.getArea() != null ? app.getArea() : Area.NINH_BINH)
-                .isActive(true)
+                .isActive(false)
                 .build();
 
         permissionGroupRepository.findByCode("MEMBER").ifPresent(mg -> user.getPermissionGroups().add(mg));
@@ -375,9 +415,17 @@ public class AdminApplicationServiceImpl implements AdminApplicationService {
     }
 
     private ApplicationFormDto mapToDto(Application application) {
+        return mapToDto(application, null);
+    }
+
+    private ApplicationFormDto mapToDto(Application application, List<Department> allowedDepartments) {
         List<ApplicationDepartmentDto> depts = new ArrayList<>();
         if (application.getApplicationDepartments() != null) {
             for (ApplicationDepartment appDept : application.getApplicationDepartments()) {
+                if (allowedDepartments != null && !allowedDepartments.isEmpty()
+                        && !allowedDepartments.contains(appDept.getDepartment())) {
+                    continue; // Ẩn ban ngoài phạm vi phân công của phỏng vấn viên
+                }
                 depts.add(ApplicationDepartmentDto.builder()
                         .id(appDept.getId())
                         .department(appDept.getDepartment())

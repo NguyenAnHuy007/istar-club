@@ -56,6 +56,41 @@ public class FileUploadUtil {
         }
     }
 
+    private static final long MAX_LANDING_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+
+    private static final List<String> ALLOWED_LANDING_IMAGE_TYPES = Arrays.asList(
+            "image/jpeg",
+            "image/jpg",
+            "image/png",
+            "image/webp",
+            "image/gif"
+    );
+
+    public static void validateLandingImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("File ảnh không được để trống!");
+        }
+
+        if (file.getSize() > MAX_LANDING_IMAGE_SIZE) {
+            throw new BadRequestException("Dung lượng ảnh vượt quá giới hạn cho phép (tối đa 10MB)!");
+        }
+
+        String contentType = file.getContentType();
+        String originalFilename = file.getOriginalFilename();
+        boolean isValidType = contentType != null && ALLOWED_LANDING_IMAGE_TYPES.contains(contentType.toLowerCase());
+        boolean isValidExt = originalFilename != null && (
+                originalFilename.toLowerCase().endsWith(".jpg") ||
+                originalFilename.toLowerCase().endsWith(".jpeg") ||
+                originalFilename.toLowerCase().endsWith(".png") ||
+                originalFilename.toLowerCase().endsWith(".webp") ||
+                originalFilename.toLowerCase().endsWith(".gif")
+        );
+
+        if (!isValidType || !isValidExt) {
+            throw new BadRequestException("Định dạng ảnh không hợp lệ! Chỉ chấp nhận: JPG, JPEG, PNG, WEBP, GIF.");
+        }
+    }
+
     public static void validateCv(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BadRequestException("File CV không được để trống!");
@@ -80,8 +115,15 @@ public class FileUploadUtil {
     }
 
     public static String saveFile(String uploadDir, MultipartFile file) throws IOException {
+        return saveFile(uploadDir, "", file);
+    }
+
+    public static String saveFile(String uploadDir, String subFolder, MultipartFile file) throws IOException {
         String cleanUploadDir = StringUtils.hasText(uploadDir) ? uploadDir : "uploads";
-        Path dirPath = Paths.get(cleanUploadDir);
+        Path dirPath = StringUtils.hasText(subFolder)
+                ? Paths.get(cleanUploadDir, subFolder)
+                : Paths.get(cleanUploadDir);
+
         if (!Files.exists(dirPath)) {
             Files.createDirectories(dirPath);
         }
@@ -94,6 +136,9 @@ public class FileUploadUtil {
         Path targetPath = dirPath.resolve(uniqueFileName);
         Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-        return "/" + cleanUploadDir + "/" + uniqueFileName;
+        if (StringUtils.hasText(subFolder)) {
+            return "/uploads/" + subFolder.replace("\\", "/").replaceAll("^/|/$", "") + "/" + uniqueFileName;
+        }
+        return "/uploads/" + uniqueFileName;
     }
 }

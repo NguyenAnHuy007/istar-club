@@ -12,11 +12,12 @@ interface AdminGuardProps {
 }
 
 export default function AdminGuard({ children }: AdminGuardProps) {
-  const { user, isAuthenticated, isLoading, isAdmin, isReceptionist, isInterviewer, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, isAdmin, isReceptionist, isInterviewer, isReviewer, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   const canAccessInterview = isReceptionist || isInterviewer;
+  const hasAnyAdminAccess = isAdmin || isReceptionist || isInterviewer || isReviewer;
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -28,13 +29,17 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     }
 
     if (!isLoading && isAuthenticated && !isAdmin) {
-      if (canAccessInterview) {
-        if (!pathname.startsWith("/admin/interview")) {
+      if (isReviewer && !canAccessInterview) {
+        if (!pathname.startsWith("/admin/applications")) {
+          router.replace("/admin/applications");
+        }
+      } else if (canAccessInterview) {
+        if (!pathname.startsWith("/admin/interview") && !(isReviewer && pathname.startsWith("/admin/applications"))) {
           router.replace("/admin/interview");
         }
       }
     }
-  }, [isLoading, isAuthenticated, isAdmin, canAccessInterview, router, pathname]);
+  }, [isLoading, isAuthenticated, isAdmin, canAccessInterview, isReviewer, router, pathname]);
 
   // Loading state
   if (isLoading) {
@@ -60,6 +65,11 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     return null; // Will redirect via useEffect
   }
 
+  // Reviewer on applications page
+  if (!isAdmin && isReviewer && pathname.startsWith("/admin/applications")) {
+    return <>{children}</>;
+  }
+
   // If user is receptionist or interviewer and on /admin/interview -> Allowed!
   if (!isAdmin && canAccessInterview) {
     if (pathname.startsWith("/admin/interview")) {
@@ -69,8 +79,8 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     return null;
   }
 
-  // Authenticated but has neither ADMIN nor RECEPTIONIST nor INTERVIEWER role
-  if (!isAdmin && !canAccessInterview) {
+  // Authenticated but has no administrative access
+  if (!isAdmin && !hasAnyAdminAccess) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-[#050506] p-4 text-[#EDEDEF]">
         <div className="max-w-md w-full p-8 rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.5)] text-center relative overflow-hidden">

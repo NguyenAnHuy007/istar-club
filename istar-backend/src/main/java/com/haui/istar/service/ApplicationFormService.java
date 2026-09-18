@@ -9,6 +9,7 @@ import java.io.ByteArrayInputStream;
 
 public interface ApplicationFormService {
     ApplicationFormResponse submitApplication(ApplicationFormRequest request);
+    ApplicationFormResponse createOfflineApplication(ApplicationFormRequest request);
     ApplicationFormResponse updateById(Long id, ApplicationFormRequest request);
     void deleteById(Long id);
     ByteArrayInputStream exportExcel();
@@ -16,4 +17,5 @@ public interface ApplicationFormService {
     ByteArrayInputStream generateExcelTemplate();
     int importExcel(MultipartFile file, Long recruitmentId);
     String uploadAvatar(Long id, MultipartFile file);
+    String uploadPublicAvatar(MultipartFile file);
 }

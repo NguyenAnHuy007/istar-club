@@ -2,7 +2,8 @@
 
 import { useState, useRef, ChangeEvent, DragEvent } from "react";
 import Image from "next/image";
-import { Upload, X, Camera } from "lucide-react";
+import { Upload, X, Camera, Crop } from "lucide-react";
+import ImageEditorModal from "@/components/common/ImageEditorModal";
 
 interface AvatarUploaderProps {
   onFileSelect: (file: File | null) => void;
@@ -12,6 +13,8 @@ export default function AvatarUploader({ onFileSelect }: AvatarUploaderProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [selectedRawFile, setSelectedRawFile] = useState<File | null>(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (file: File) => {
@@ -20,20 +23,30 @@ export default function AvatarUploader({ onFileSelect }: AvatarUploaderProps) {
       setErrorMsg("Vui lòng chọn định dạng ảnh (JPG, PNG, WEBP)");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg("Kích thước ảnh tối đa là 5MB");
+    // Save raw file and open editor
+    setSelectedRawFile(file);
+    setIsEditorOpen(true);
+  };
+
+  const handleEditorConfirm = (processedFile: File) => {
+    if (processedFile.size > 5 * 1024 * 1024) {
+      setErrorMsg("Kích thước ảnh đại diện sau xử lý tối đa là 5MB");
       return;
     }
-
-    const objectUrl = URL.createObjectURL(file);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    const objectUrl = URL.createObjectURL(processedFile);
     setPreviewUrl(objectUrl);
-    onFileSelect(file);
+    onFileSelect(processedFile);
+    setErrorMsg(null);
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       handleFile(e.target.files[0]);
     }
+    e.target.value = "";
   };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -60,6 +73,7 @@ export default function AvatarUploader({ onFileSelect }: AvatarUploaderProps) {
       URL.revokeObjectURL(previewUrl);
     }
     setPreviewUrl(null);
+    setSelectedRawFile(null);
     setErrorMsg(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -121,15 +135,28 @@ export default function AvatarUploader({ onFileSelect }: AvatarUploaderProps) {
               <button
                 type="button"
                 onClick={triggerSelect}
-                className="text-sm text-[#3b82f6] hover:text-[#60a5fa] font-medium transition-colors"
+                className="text-sm text-[#3b82f6] hover:text-[#60a5fa] font-medium transition-colors cursor-pointer"
               >
                 Đổi ảnh khác
               </button>
+              {selectedRawFile && (
+                <>
+                  <span className="text-white/20">•</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditorOpen(true)}
+                    className="inline-flex items-center gap-1 text-sm text-[#4d8ee8] hover:text-[#60a5fa] font-medium transition-colors cursor-pointer"
+                  >
+                    <Crop className="w-3.5 h-3.5" />
+                    Chỉnh sửa
+                  </button>
+                </>
+              )}
               <span className="text-white/20">•</span>
               <button
                 type="button"
                 onClick={handleRemove}
-                className="inline-flex items-center gap-1 text-sm text-red-400 hover:text-red-300 transition-colors"
+                className="inline-flex items-center gap-1 text-sm text-red-400 hover:text-red-300 transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
                 Xóa ảnh
@@ -139,14 +166,14 @@ export default function AvatarUploader({ onFileSelect }: AvatarUploaderProps) {
             <button
               type="button"
               onClick={triggerSelect}
-              className="text-sm text-[#3b82f6] hover:text-[#60a5fa] font-medium transition-colors"
+              className="text-sm text-[#3b82f6] hover:text-[#60a5fa] font-medium transition-colors cursor-pointer"
             >
               Chọn ảnh thẻ / ảnh chân dung
             </button>
           )}
 
           <p className="text-xs text-[#8A8F98]/60">
-            Hỗ trợ JPG, PNG, WEBP (Tối đa 5MB)
+            Hỗ trợ JPG, PNG, WEBP (Tự động cắt tỉ lệ 1:1, nén tối đa 5MB)
           </p>
 
           {errorMsg && (
@@ -154,6 +181,16 @@ export default function AvatarUploader({ onFileSelect }: AvatarUploaderProps) {
           )}
         </div>
       </div>
+
+      {/* Image Editor Modal for Candidate Avatar */}
+      <ImageEditorModal
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        file={selectedRawFile}
+        aspectRatioPreset={1 / 1}
+        title="Chỉnh sửa ảnh đại diện (1:1)"
+        onConfirm={handleEditorConfirm}
+      />
     </div>
   );
 }

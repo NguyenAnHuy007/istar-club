@@ -36,10 +36,10 @@ const footerLinks = [
   {
     title: "Hoạt động",
     links: [
-      { label: "Đêm nhạc hội", href: "/#about" },
-      { label: "Workshop", href: "/#about" },
+      { label: "Mini Show", href: "/#about" },
+      { label: "Quay MV", href: "/#about" },
       { label: "Ứng tuyển thành viên", href: "/apply" },
-      { label: "Thiện nguyện", href: "/#about" },
+      { label: "Các cuộc thi", href: "/#about" },
     ],
   },
 ];
@@ -55,10 +55,11 @@ export default function Footer() {
 
       <div ref={ref} className="max-w-7xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-8 pb-10 md:pb-14"
+          initial={{ opacity: 0, y: 28, rotateX: 3 }}
+          animate={isInView ? { opacity: 1, y: 0, rotateX: 0 } : {}}
+          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+          style={{ perspective: "800px", transformOrigin: "center top" }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 lg:gap-8 pb-8 md:pb-14"
         >
           {/* Brand Column */}
           <div className="lg:col-span-1">
@@ -78,11 +79,11 @@ export default function Footer() {
             </div>
             <p className="text-sm text-[#8A8F98] leading-relaxed mb-6 max-w-xs">
               Câu lạc bộ Nghệ thuật iStar — Trường CNTT&TT, Đại học Công nghiệp
-              Hà Nội. Nơi tỏa sáng theo cách của bạn.
+              Hà Nội. Keep your passion and shine together.
             </p>
             <div className="flex items-center gap-3">
               <a
-                href="https://facebook.com"
+                href="https://www.facebook.com/iStarHaUI"
                 target="_blank"
                 rel="noreferrer"
                 className="w-9 h-9 rounded-lg border border-white/[0.08] bg-white/[0.02] flex items-center justify-center text-[#8A8F98] hover:text-[#EDEDEF] hover:border-white/[0.15] hover:bg-white/[0.05] transition-all duration-300"
@@ -91,7 +92,7 @@ export default function Footer() {
                 <FacebookIcon className="w-4 h-4" />
               </a>
               <a
-                href="https://youtube.com"
+                href="https://www.youtube.com/@istarhaui"
                 target="_blank"
                 rel="noreferrer"
                 className="w-9 h-9 rounded-lg border border-white/[0.08] bg-white/[0.02] flex items-center justify-center text-[#8A8F98] hover:text-[#EDEDEF] hover:border-white/[0.15] hover:bg-white/[0.05] transition-all duration-300"
@@ -131,20 +132,20 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-start gap-3 text-sm text-[#8A8F98]">
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-[#255798]" />
-                <span>
-                  Số 298 Đ. Cầu Diễn, Minh Khai, Bắc Từ Liêm, Hà Nội
+                <span className="break-words">
+                  Số 298 Đ. Cầu Diễn, Nhổn, Tây Tựu, Hà Nội
                 </span>
               </li>
               <li className="flex items-center gap-3 text-sm text-[#8A8F98]">
                 <Mail className="w-4 h-4 shrink-0 text-[#255798]" />
-                <a href="mailto:istar.haui@gmail.com" className="hover:text-[#EDEDEF] transition-colors duration-200">
-                  istar.haui@gmail.com
+                <a href="mailto:istarhaui@gmail.com" className="hover:text-[#EDEDEF] transition-colors duration-200">
+                  istarhaui@gmail.com
                 </a>
               </li>
               <li className="flex items-center gap-3 text-sm text-[#8A8F98]">
                 <Phone className="w-4 h-4 shrink-0 text-[#255798]" />
-                <a href="tel:+84123456789" className="hover:text-[#EDEDEF] transition-colors duration-200">
-                  0123 456 789
+                <a href="tel:+84854887015" className="hover:text-[#EDEDEF] transition-colors duration-200">
+                  085 488 7015
                 </a>
               </li>
             </ul>
@@ -152,12 +153,12 @@ export default function Footer() {
         </motion.div>
 
         {/* Bottom bar */}
-        <div className="border-t border-white/[0.06] py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="border-t border-white/[0.06] py-5 md:py-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
           <p className="text-xs text-[#8A8F98]/60">
-            © 2024 iStar — Câu lạc bộ Nghệ thuật. All rights reserved.
+            © 2026 iStar - Câu lạc bộ Nghệ thuật. All rights reserved.
           </p>
           <p className="text-xs text-[#8A8F98]/40">
-            Made with ♥ by iStar Team
+            Made by Nguyen An Huy
           </p>
         </div>
       </div>

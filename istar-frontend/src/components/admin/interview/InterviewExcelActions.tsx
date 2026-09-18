@@ -6,6 +6,7 @@ import { FileSpreadsheet, Download, Upload, ChevronDown, Loader2 } from "lucide-
 import { isAxiosError } from "axios";
 import adminApplicationService from "@/services/adminApplicationService";
 import { AdminApplicationSearchCriteria } from "@/types/application";
+import { useToast } from "@/context/ToastContext";
 
 interface InterviewExcelActionsProps {
   activeRecruitmentId?: number;
@@ -24,6 +25,7 @@ export default function InterviewExcelActions({
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
   const excelFileInputRef = useRef<HTMLInputElement>(null);
   const excelMenuRef = useRef<HTMLDivElement>(null);
+  const toast = useToast();
 
   // Close Excel menu on click outside
   useEffect(() => {
@@ -46,9 +48,10 @@ export default function InterviewExcelActions({
     setIsExcelMenuOpen(false);
     try {
       await adminApplicationService.downloadExcelTemplate();
+      toast.success("Tải file mẫu Excel thành công!");
     } catch (err) {
       console.error("Lỗi tải template Excel:", err);
-      alert("Không thể tải file mẫu Excel. Vui lòng thử lại sau.");
+      toast.error("Không thể tải file mẫu Excel. Vui lòng thử lại sau.");
     } finally {
       setIsDownloadingTemplate(false);
     }
@@ -59,9 +62,10 @@ export default function InterviewExcelActions({
     setIsExcelMenuOpen(false);
     try {
       await adminApplicationService.exportExcel(searchCriteria);
+      toast.success("Xuất dữ liệu Excel thành công!");
     } catch (err) {
       console.error("Lỗi xuất Excel ứng viên:", err);
-      alert("Không thể xuất file Excel. Vui lòng thử lại sau.");
+      toast.error("Không thể xuất file Excel. Vui lòng thử lại sau.");
     } finally {
       setIsExportingExcel(false);
     }
@@ -81,12 +85,12 @@ export default function InterviewExcelActions({
         file,
         activeRecruitmentId
       );
-      alert(`Import thành công ${count} hồ sơ ứng viên vào đợt tuyển hiện tại!`);
+      toast.success(`Import thành công ${count} hồ sơ ứng viên vào đợt tuyển hiện tại!`);
       onImportSuccess();
     } catch (err: unknown) {
       console.error("Lỗi import Excel:", err);
       const msg = isAxiosError(err) ? err.response?.data?.message : null;
-      alert(
+      toast.error(
         "Lỗi import file Excel: " +
           (msg || "Vui lòng kiểm tra lại định dạng file!")
       );

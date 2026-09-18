@@ -24,6 +24,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isReceptionist: boolean;
   isInterviewer: boolean;
+  isReviewer: boolean;
   hasRole: (role: string) => boolean;
   hasPermission: (permission: string) => boolean;
   hasAnyRole: (roles: string[]) => boolean;
@@ -196,6 +197,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user?.permissions?.includes("PERM_APPLICATION_VIEW_OWN_DEPT")
   );
 
+  const isReviewer = Boolean(
+    isAdmin ||
+    user?.roles?.includes("REVIEWER") ||
+    user?.role === "REVIEWER" ||
+    user?.permissions?.includes("APPLICATION_REVIEW") ||
+    user?.permissions?.includes("PERM_APPLICATION_REVIEW")
+  );
+
   const hasRole = useCallback((roleName: string): boolean => {
     if (!user) return false;
     if (user.roles?.includes("ADMIN") || user.role === "ADMIN") return true;
@@ -208,23 +217,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return Boolean(
       user.permissions?.includes(permCode) ||
       user.permissions?.includes("PERM_" + permCode) ||
-      (permCode.startsWith("PERM_") && user.permissions?.includes(permCode.replace("PERM_", "")))
+      user.permissions?.includes(permCode.replace(/^PERM_/, ""))
     );
   }, [user]);
 
-  const hasAnyRole = useCallback((roles: string[]): boolean => {
+  const hasAnyRole = useCallback((roleNames: string[]): boolean => {
     if (!user) return false;
     if (user.roles?.includes("ADMIN") || user.role === "ADMIN") return true;
-    return roles.some((r) => user.roles?.includes(r) || user.role === r);
+    return roleNames.some(role => user.roles?.includes(role) || user.role === role);
   }, [user]);
 
-  const hasAnyPermission = useCallback((perms: string[]): boolean => {
+  const hasAnyPermission = useCallback((permCodes: string[]): boolean => {
     if (!user) return false;
     if (user.roles?.includes("ADMIN") || user.role === "ADMIN") return true;
-    return perms.some((p) =>
-      user.permissions?.includes(p) ||
-      user.permissions?.includes("PERM_" + p) ||
-      (p.startsWith("PERM_") && user.permissions?.includes(p.replace("PERM_", "")))
+    return permCodes.some(perm => 
+      user.permissions?.includes(perm) || 
+      user.permissions?.includes("PERM_" + perm) ||
+      user.permissions?.includes(perm.replace(/^PERM_/, ""))
     );
   }, [user]);
 
@@ -233,11 +242,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         token,
-        isAuthenticated: !!token,
+        isAuthenticated: Boolean(token && user),
         isLoading,
         isAdmin,
         isReceptionist,
         isInterviewer,
+        isReviewer,
         hasRole,
         hasPermission,
         hasAnyRole,

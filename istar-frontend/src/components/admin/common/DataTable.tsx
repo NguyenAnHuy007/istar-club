@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ArrowUpDown, ArrowUp, ArrowDown, Inbox, Layers } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Inbox } from "lucide-react";
 import TableCheckbox from "./TableCheckbox";
 
 export interface Column<T> {
@@ -12,6 +12,7 @@ export interface Column<T> {
   /** Accessor key of T or function that returns the display value */
   accessor?: keyof T | ((row: T, index: number) => React.ReactNode);
   /** Optional custom cell render function: (value, row, index) => ReactNode */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   render?: (value: any, row: T, index: number) => React.ReactNode;
   /** Whether the column can be sorted */
   sortable?: boolean;
@@ -304,18 +305,18 @@ export default function DataTable<T>({
 
                   {/* Cell Renderers */}
                   {columns.map((col) => {
-                    let cellValue: any = null;
+                    let cellValue: unknown = null;
                     if (typeof col.accessor === "function") {
                       cellValue = col.accessor(row, rowIndex);
                     } else if (col.accessor) {
-                      cellValue = (row as any)[col.accessor];
+                      cellValue = (row as Record<string, unknown>)[col.accessor as string];
                     } else {
-                      cellValue = (row as any)[col.key];
+                      cellValue = (row as Record<string, unknown>)[col.key];
                     }
 
                     const renderedContent = col.render
                       ? col.render(cellValue, row, rowIndex)
-                      : cellValue;
+                      : (cellValue as React.ReactNode);
 
                     return (
                       <td

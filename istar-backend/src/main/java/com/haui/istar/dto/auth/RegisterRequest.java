@@ -1,6 +1,6 @@
 package com.haui.istar.dto.auth;
 
-import com.haui.istar.dto.user.UserDepartmentRequest;
+import com.haui.istar.dto.user.SelfUserDepartmentRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -48,7 +48,7 @@ public class RegisterRequest {
     private String address;
 
     @Valid
-    private List<UserDepartmentRequest> userDepartments;
+    private List<SelfUserDepartmentRequest> userDepartments;
 
     @Size(max = 100, message = "Trường/khoa không được vượt quá 100 ký tự")
     private String school;

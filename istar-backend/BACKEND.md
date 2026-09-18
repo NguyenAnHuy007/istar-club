@@ -94,20 +94,30 @@ graph LR
 ### 2.7 An Toàn Kiểu & Stream Mapping
 - Trích xuất `Department` từ `UserDepartment` luôn kiểm tra null: `user.getUserDepartments() != null`, `.filter(Objects::nonNull)` và dùng lambda `ud -> ud.getDepartment()` tránh lỗi strict null analysis.
 
-### 2.8 Khởi Tạo Dữ Liệu Mẫu & Kiểm Thử (Data Seeding & Mock Data)
-- **`DataSeeder` (`CommandLineRunner`)**:
-  - Tự động seed danh mục quyền (`permissions`), nhóm quyền (`ADMIN`, `RECEPTIONIST`, `INTERVIEWER`, `REVIEWER`, `MEMBER`), danh mục chung `common_codes` (`SCHOOL`, `COURSE` K12-K21), và thế hệ (`Gen 7`, `Gen 8`).
-  - Tài khoản mặc định:
-    - Quản trị viên: `admin` / `admin123` (Role ADMIN, Position PRESIDENT, isActive=true).
-    - Lễ tân: `receptionist` / `password123` (Role RECEPTIONIST).
-    - Phỏng vấn viên 4 ban: `interviewer_music`, `interviewer_dance`, `interviewer_rap`, `interviewer_media` (Role INTERVIEWER, Position DEPARTMENT_HEAD).
-    - Xét duyệt viên: `reviewer` / `password123` (Role REVIEWER, Position VICE_PRESIDENT).
-  - Tuyển dụng & Hồ sơ ứng viên:
+### 2.8 Khởi Tạo Dữ Liệu Mẫu & Tách Biệt Môi Trường (Data Seeding & Production Strategy)
+- **Tách biệt 2 Seeder độc lập**:
+  - **`SystemDataSeeder` (`@Order(1)`)**: Dữ liệu hệ thống cốt lõi thiết yếu (giữ lại trên môi trường Production):
+    - Danh mục quyền nguyên tử (`permissions`) & nhóm quyền (`ADMIN`, `RECEPTIONIST`, `INTERVIEWER`, `REVIEWER`, `MEMBER`).
+    - Tài khoản quản trị viên mặc định: `admin` / `admin123` (Role `ADMIN`, Position `PRESIDENT`, `isActive=true`).
+    - Gán toàn bộ quyền `PERM_*` cho tài khoản `admin`.
+    - Danh mục dùng chung `common_codes` (`SCHOOL` các trường/khoa HaUI, `COURSE` K12-K21).
+    - Các thế hệ CLB (`Gen 7`, `Gen 8`).
+    - Cấu hình trang chủ mặc định (`LandingConfig`).
+  - **`MockDataSeeder` (`@Order(2)`)**: Dữ liệu kiểm thử phục vụ phát triển & demo (dễ dàng vô hiệu hóa hoặc loại bỏ khi deploy Production):
+    - Tài khoản nhân sự test: Lễ tân (`receptionist`), Phỏng vấn viên 4 ban (`interviewer_music`, `interviewer_dance`, `interviewer_rap`, `interviewer_media`), Xét duyệt viên (`reviewer`).
     - 2 đợt tuyển: Gen 7 (đã đóng) và Gen 8 (Active).
     - 12 hồ sơ ứng viên mẫu bao phủ đầy đủ tất cả các trạng thái: `SUBMITTED`, `CHECKED_IN`, `INTERVIEWING`, `INTERVIEWED`, `APPROVED`, `REJECTED`, `NO_SHOW`, kèm điểm số phỏng vấn (0-10), nhận xét chi tiết và đa nguyện vọng ban.
 - **Chiến lược DDL**: Cấu hình chuẩn `spring.jpa.hibernate.ddl-auto=update` duy trì dữ liệu toàn vẹn sau khi đã làm sạch schema qua chu kỳ `create-drop`.
 
-### 2.9 Quy Chuẩn Xử Lý Excel (Export & Import)
+### 2.9 Quy Chuẩn Lưu Trữ Tệp Tin & Phân Vùng Thư Mục (Uploads Storage Architecture)
+- **Cấu trúc phân vùng thư mục con**:
+  - `uploads/avatars/`: Ảnh đại diện, ảnh thẻ chân dung của ứng viên và người dùng hệ thống. Kiểm duyệt qua `validateAvatar`: tối đa 5MB, hỗ trợ JPEG, PNG, WEBP.
+  - `uploads/landing/`: Ảnh các section trang chủ (Hero banner, Bento grid các ban, kỷ niệm/thành tích). Kiểm duyệt qua `validateLandingImage`: tối đa 10MB, hỗ trợ JPEG, PNG, WEBP, GIF.
+- **Tiện ích lưu trữ (`FileUploadUtil`)**: Hỗ trợ `saveFile(String uploadDir, String subFolder, MultipartFile file)`, tự động tạo folder con nếu chưa tồn tại, sinh tên file ngẫu nhiên an toàn (`UUID`), và trả về đường dẫn tương đối `/uploads/{subFolder}/{fileName}`.
+- **Tự động dọn dẹp & giải phóng bộ nhớ (`LandingConfigServiceImpl`)**: Khi cập nhật cấu hình trang chủ (`updateHomepageConfig`), service tự động trích xuất các đường dẫn `/uploads/landing/...`, xóa sạch các tệp ảnh cũ bị thay thế khỏi đĩa cứng (`Files.deleteIfExists`) và quét dọn các file mồ côi (orphans > 15 phút không còn thuộc cấu hình active).
+- **Tương thích đa nền tảng (`WebMvcConfig` & `SecurityConfig`)**: `addResourceLocations(uploadPath.toUri().toString())` sử dụng URI chuẩn (`file:///`), khắc phục triệt để lỗi phân giải ký tự ổ đĩa trên Windows (`D:/...`) và hỗ trợ đường dẫn trên Linux; CORS mở rộng hỗ trợ cả phương thức `HEAD` tránh trả về 403 khi kiểm tra resource tĩnh.
+
+### 2.10 Quy Chuẩn Xử Lý Excel (Export & Import)
 - **Tối ưu hiển thị cột (Min-width ~150px)**:
   - `ExcelExporter` đặt `sheet.setDefaultColumnWidth(22)` và tính toán độ rộng tự động với ngưỡng tối thiểu `Math.max(colWidth, 22 * 256)`. Tránh tình trạng co cụm text trên màn hình độ phân giải cao.
 - **Chuẩn hóa giá trị trạng thái xuất khẩu**:
@@ -135,6 +145,31 @@ graph LR
 - **Phòng Ngừa Xung Đột Dữ Liệu (Data Integrity Guard)**:
   - `ApplicationFormServiceImpl` thực hiện kiểm tra `seenDepts` để chặn triệt để tình huống đăng ký trùng một ban trong cùng một đơn (`UNIQUE(application_id, department)`), ném `BadRequestException` thân thiện thay vì để nổ ngoại lệ vi phạm khóa chính/khóa duy nhất ở tầng DB.
 
+### 2.11 Ràng Buộc Bảo Mật & Toàn Vẹn Dữ Liệu Nâng Cao (Security & Concurrency Defense)
+- **Scoping & Redaction Hồ sơ cho Phỏng vấn viên (`INTERVIEWER`)**:
+  - `GET /api/admin/applications/{id}`: Phỏng vấn viên chỉ được xem ứng viên thuộc đợt tuyển đang active và có nguyện vọng vào ban mà mình phụ trách.
+  - Tự động lọc/ẩn (redact) thông tin các ban khác: ứng viên ứng tuyển nhiều ban sẽ chỉ thấy ban mình phụ trách trong danh sách `departments`, che giấu toàn bộ điểm số, nhận xét và danh tính interviewer của các ban khác.
+- **Quy trình Phỏng vấn chặt chẽ (State Machine Integrity)**:
+  - Chỉ cho phép bắt đầu phỏng vấn (`start-multi`) khi nguyện vọng ban đang ở `CHECKED_IN`, và phỏng vấn viên phải được phân công phụ trách ban đó (hoặc quản trị viên `ADMIN`).
+  - Chỉ cho phép hoàn tất phỏng vấn (`complete-multi`) khi ban đang ở `INTERVIEWING`, và phải do chính người đã claim phiên phỏng vấn đó hoàn tất (hoặc `ADMIN`).
+  - Chặn báo vắng mặt (`NO_SHOW`) khi đơn hoặc bất kỳ ban nào đang trong trạng thái `INTERVIEWING`.
+- **Chống Race Condition Kích Hoạt Đợt Tuyển (Pessimistic Locking)**:
+  - `RecruitmentRepository.findActiveRecruitmentForUpdate()` áp dụng `@Lock(LockModeType.PESSIMISTIC_WRITE)` để khóa dòng đợt tuyển active hiện tại, đảm bảo an toàn tuyệt đối khi nhiều admin cùng thao tác mở/đóng đợt tuyển đồng thời.
+- **Ràng Buộc Tầng Cơ Sở Dữ Liệu (`constraints.sql`)**:
+  - Index duy nhất có điều kiện: `idx_unique_active_recruitment` (`WHERE is_active = true AND is_deleted = false`) bảo vệ tầng DB không bao giờ tồn tại >1 đợt tuyển active.
+  - Trigger `check_department_head_limit_func` kết hợp `pg_advisory_xact_lock` và kiểm tra chỉ tính user hoạt động (`is_deleted = false AND is_active = true`) đảm bảo mỗi ban tối đa đúng 1 Trưởng ban (`DEPARTMENT_HEAD`).
+  - Trigger `check_position_limits_func` dùng `pg_advisory_xact_lock` giới hạn quota `PRESIDENT`, `VICE_PRESIDENT`, và cấm `VICE_PRESIDENT` tại cơ sở `NINH_BINH`.
+- **Bảo Vệ Đăng Ký / Cập Nhật Hồ Sơ Cá Nhân**:
+  - `RegisterRequest` và `UpdateProfileRequest` dùng `SelfUserDepartmentRequest` (chỉ chọn `department`, không cho phép tự phong `position`). Khi đăng ký mới, server luôn ép cứng `Position.MEMBER`.
+  - Cập nhật hồ sơ cá nhân thực hiện in-place reconciliation: giữ nguyên `position` hiện tại của người dùng, không bị ghi đè.
+- **Vô Hiệu Hóa Token Tức Thì (Instant Token Revocation)**:
+  - `JwtAuthenticationFilter` kiểm tra `userDetails.isEnabled()`. Tài khoản bị Admin vô hiệu hóa (`isActive = false`) sẽ bị chặn request ngay lập tức dù JWT token chưa hết hạn.
+- **Phục Vụ File Tĩnh & CORS**:
+  - `WebMvcConfig` đăng ký ResourceHandler phục vụ file tĩnh tại đường dẫn `/uploads/**`.
+  - `SecurityConfig` cho phép cấu hình `app.cors.allowed-origins` và `permitAll` cho `/uploads/**`.
+- **Tạo Tài Khoản Mặc Định Inactive (Invariant 3.6)**:
+  - Tài khoản người dùng được tạo từ đơn ứng tuyển trúng tuyển (`POST /api/admin/applications/{id}/create-account`) luôn khởi tạo ở trạng thái vô hiệu hóa (`isActive = false`).
+
 ---
 
 ## 3. Mô Hình Dữ Liệu Tóm Tắt
@@ -155,6 +190,7 @@ erDiagram
 - **`applications`**: Hồ sơ ứng viên (`area` cơ sở HANOI/NINH_BINH, `facebook_url`, SĐT, email, trường lớp), `@Version`.
 - **`application_departments`**: Ban ứng tuyển, `status`, `interviewScore` (0.0-10.0), `interviewNotes`, `interviewer_id`, `@Version`.
 - **`common_codes`**: Danh mục động (`SCHOOL`, `COURSE`...).
+- **`landing_configs`**: Cấu hình nội dung các section trang chủ (`config_key = 'HOMEPAGE'`, `content_json` TEXT, `@Version`).
 
 ---
 
@@ -163,16 +199,15 @@ erDiagram
 ### 4.1 Auth & Public (`/api/auth`, `/api/public`)
 | Method | Endpoint | Quyền | Mô Tả |
 |---|---|---|---|
-| `POST` | `/api/auth/register` | Public | Đăng ký tài khoản mới (mặc định `isActive = false`) |
+| `POST` | `/api/auth/register` | Public | Đăng ký tài khoản mới (mặc định `isActive = false`, position `MEMBER`) |
 | `POST` | `/api/auth/login` | Public | Đăng nhập (hỗ trợ username hoặc email), cấp JWT token |
-| `POST` | `/api/auth/applications` | Public | Nộp đơn online (tự bind đợt tuyển active) |
-| `PUT` | `/api/auth/applications/{id}` | Public/Admin | Cập nhật đơn |
-| `DELETE`| `/api/auth/applications/{id}` | Admin | Xóa mềm đơn |
-| `POST` | `/api/auth/applications/{id}/upload-avatar`| Public | Tải lên ảnh thẻ |
+| `POST` | `/api/auth/applications` | Public | Nộp đơn online (tự bind đợt tuyển active, ép trạng thái `SUBMITTED`) |
+| `POST` | `/api/auth/applications/upload-avatar` | Public | Upload ảnh thẻ/chân dung ứng viên khi nộp đơn online (lưu vào `uploads/avatars/`) |
 | `GET` | `/api/public/recruitments/active` | Public | Lấy đợt tuyển đang mở |
 | `GET` | `/api/public/common-codes/schools` | Public | Danh sách trường/khoa HaUI |
 | `GET` | `/api/public/common-codes/courses` | Public | Danh sách khóa sinh viên (K12 - K21) |
-| `GET` | `/api/public/common-codes/recent-courses` | Public | 6 khóa gần nhất (K16 - K21) |
+| `GET` | `/api/public/common-codes/recent-courses` | Public | Các khóa gần nhất (`limit` clamped 1-50, mặc định 6) |
+| `GET` | `/api/public/homepage` | Public | Lấy cấu hình công khai trang chủ (Hero, About, Departments, Achievements) |
 
 ### 4.2 Cá Nhân (`/api/users`)
 | Method | Endpoint | Quyền | Mô Tả |
@@ -215,6 +250,9 @@ erDiagram
 | **Dashboard** | `GET /api/admin/dashboard/stats` | `APPLICATION_VIEW` | Thống kê real-time (7 trạng thái, 4 ban, 7-day trend...) |
 | **Commons** | `/api/admin/common-codes/**` | `PERM_SYSTEM_CONFIG` | CRUD danh mục cấu hình dùng chung |
 | **Generations**| `/api/admin/generations/**` | `PERM_SYSTEM_CONFIG` | CRUD thế hệ/gen CLB |
+| **Homepage**   | `GET /api/admin/homepage` | `PERM_SYSTEM_CONFIG` | Xem cấu hình trang chủ hiện tại |
+|                | `PUT /api/admin/homepage` | `PERM_SYSTEM_CONFIG` | Lưu cấu hình trang chủ (Hero, About, Departments 2-6 ban, Achievements) |
+|                | `POST /api/admin/homepage/upload-image` | `PERM_SYSTEM_CONFIG` | Upload ảnh phục vụ các section trang chủ (tối đa 10MB, JPG/PNG/WEBP/GIF, lưu vào `uploads/landing/`) |
 
 ### 4.4 Tác Nghiệp Lễ Tân & Phỏng Vấn
 | Method | Endpoint | Quyền | Mô Tả |

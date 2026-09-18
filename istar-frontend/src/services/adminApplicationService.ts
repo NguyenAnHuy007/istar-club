@@ -81,12 +81,7 @@ export const adminApplicationService = {
     formData.append("file", file);
     const response = await apiClient.post<ApiResponse<string>>(
       `${BASE_PATH}/${id}/upload-avatar`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      formData
     );
     return response.data.data;
   },
@@ -128,8 +123,7 @@ export const adminApplicationService = {
     if (recruitmentId) formData.append("recruitmentId", String(recruitmentId));
     const response = await apiClient.post<ApiResponse<number>>(
       `${BASE_PATH}/import-excel`,
-      formData,
-      { headers: { "Content-Type": "multipart/form-data" } }
+      formData
     );
     return response.data.data;
   },

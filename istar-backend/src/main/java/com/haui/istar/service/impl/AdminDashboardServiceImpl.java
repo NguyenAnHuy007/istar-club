@@ -82,7 +82,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().toLocalDate().isEqual(today))
                 .count();
 
-        long totalMembers = userRepository.count();
+        long totalMembers = userRepository.countByIsDeletedFalse();
 
         DashboardStatsDto.OverviewStats overview = DashboardStatsDto.OverviewStats.builder()
                 .totalApplications(totalApps)

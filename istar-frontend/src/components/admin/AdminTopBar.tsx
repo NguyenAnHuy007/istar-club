@@ -5,8 +5,11 @@ import { Menu } from "lucide-react";
 
 const pageTitles: Record<string, string> = {
   "/admin": "Tổng quan",
+  "/admin/interview": "Bàn Phỏng Vấn",
+  "/admin/recruitments": "Đợt tuyển thành viên",
   "/admin/applications": "Đơn ứng tuyển",
   "/admin/users": "Người dùng",
+  "/admin/homepage": "Quản lý Trang chủ",
 };
 
 interface AdminTopBarProps {

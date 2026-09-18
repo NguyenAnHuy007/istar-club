@@ -35,6 +35,7 @@ import { Department, Area } from "@/types/user";
 import { RecruitmentDto } from "@/types/recruitment";
 import { StatusBreakdownItem, DepartmentStatItem } from "@/types/dashboard";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import { HAUI_SCHOOLS } from "@/constants/schools";
 import { DEPARTMENTS_LIST } from "@/constants/departments";
 import { formatSchoolName } from "@/utils/format";
@@ -64,6 +65,7 @@ import {
 
 export default function InterviewPageContent() {
   const { user, isAdmin, isReceptionist, isInterviewer } = useAuth();
+  const toast = useToast();
 
   // Active Recruitment
   const [activeRecruitment, setActiveRecruitment] = useState<RecruitmentDto | null>(null);
@@ -415,7 +417,7 @@ export default function InterviewPageContent() {
     );
 
     if (eligibleApps.length === 0) {
-      alert(
+      toast.warning(
         "Không có ứng viên nào hợp lệ để báo vắng mặt. Chức năng này chỉ áp dụng cho ứng viên có trạng thái Đã nộp đơn hoặc Đã điểm danh."
       );
       return;
@@ -432,6 +434,7 @@ export default function InterviewPageContent() {
     try {
       await Promise.allSettled(eligibleApps.map((a) => interviewService.noShow(a.id)));
       setSelectedIds(new Set());
+      toast.success(`Đã đánh dấu vắng mặt cho ${eligibleApps.length} ứng viên.`);
       await fetchApplications();
       await fetchStatsApplications();
     } finally {
@@ -446,7 +449,7 @@ export default function InterviewPageContent() {
     );
 
     if (eligibleApps.length === 0) {
-      alert(
+      toast.warning(
         "Không có ứng viên nào hợp lệ để duyệt đơn. Chức năng này chỉ áp dụng cho ứng viên đã hoàn tất phỏng vấn tất cả các ban (Trạng thái: Đã phỏng vấn)."
       );
       return;
@@ -465,6 +468,7 @@ export default function InterviewPageContent() {
         eligibleApps.map((a) => adminApplicationService.approveApplication(a.id))
       );
       setSelectedIds(new Set());
+      toast.success(`Đã duyệt trúng tuyển cho ${eligibleApps.length} ứng viên.`);
       await fetchApplications();
       await fetchStatsApplications();
     } finally {
@@ -479,7 +483,7 @@ export default function InterviewPageContent() {
     );
 
     if (eligibleApps.length === 0) {
-      alert(
+      toast.warning(
         "Không có ứng viên nào hợp lệ để từ chối. Chức năng này chỉ áp dụng cho ứng viên có trạng thái Đã phỏng vấn."
       );
       return;
@@ -498,6 +502,7 @@ export default function InterviewPageContent() {
         eligibleApps.map((a) => adminApplicationService.rejectApplication(a.id))
       );
       setSelectedIds(new Set());
+      toast.success(`Đã từ chối ${eligibleApps.length} đơn ứng tuyển.`);
       await fetchApplications();
       await fetchStatsApplications();
     } finally {

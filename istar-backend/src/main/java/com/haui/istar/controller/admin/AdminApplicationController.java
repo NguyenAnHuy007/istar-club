@@ -79,14 +79,16 @@ public class AdminApplicationController {
     @PreAuthorize("hasAnyAuthority('APPLICATION_CREATE', 'ROLE_ADMIN', 'PERM_APPLICATION_CREATE')")
     public ResponseEntity<ApiResponse<ApplicationFormResponse>> createApplication(
             @RequestBody @Valid ApplicationFormRequest request) {
-        ApplicationFormResponse created = applicationFormService.submitApplication(request);
+        ApplicationFormResponse created = applicationFormService.createOfflineApplication(request);
         return ResponseEntity.ok(ApiResponse.success("Tạo đơn ứng tuyển thành công", created));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('APPLICATION_VIEW', 'APPLICATION_VIEW_OWN_DEPT', 'ROLE_ADMIN', 'PERM_APPLICATION_VIEW', 'PERM_APPLICATION_VIEW_OWN_DEPT')")
-    public ResponseEntity<ApiResponse<ApplicationFormDto>> getApplicationById(@PathVariable Long id) {
-        ApplicationFormDto application = adminApplicationService.getApplicationById(id);
+    public ResponseEntity<ApiResponse<ApplicationFormDto>> getApplicationById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        ApplicationFormDto application = adminApplicationService.getApplicationById(id, principal);
         return ResponseEntity.ok(ApiResponse.success("Lấy thông tin đơn thành công", application));
     }
 

@@ -14,7 +14,6 @@ import { adminUserService } from "@/services/adminUserService";
 import {
   X,
   Save,
-  AlertTriangle,
   ShieldCheck,
   ShieldAlert,
   Trash2,
@@ -28,6 +27,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect, { Option } from "@/components/common/CustomSelect";
 import SelectWithOther, { SelectOption } from "@/components/common/SelectWithOther";
 import commonCodeService from "@/services/commonCodeService";
+import { useToast } from "@/context/ToastContext";
 import { HAUI_SCHOOLS } from "@/constants/schools";
 
 interface UserDetailModalProps {
@@ -100,7 +100,7 @@ export default function UserDetailModal({
   const [selectedDepts, setSelectedDepts] = useState<Department[]>([]);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   const [schoolOptions, setSchoolOptions] = useState<SelectOption[]>(
     HAUI_SCHOOLS.map((s) => ({ value: s, label: s }))
@@ -175,8 +175,6 @@ export default function UserDetailModal({
           ? user.roles
           : [String(user.role || "MEMBER")];
       setSelectedGroups(initialGroups);
-
-      setError(null);
     }
   }, [isOpen, user]);
 
@@ -204,7 +202,6 @@ export default function UserDetailModal({
     if (!user) return;
 
     setIsSaving(true);
-    setError(null);
 
     // Chuyển danh sách ban được chọn thành userDepartments
     const primaryRole = selectedGroups.includes("ADMIN")
@@ -233,7 +230,7 @@ export default function UserDetailModal({
     } catch (err: unknown) {
       console.error(err);
       const msg = isAxiosError(err) ? err.response?.data?.message : null;
-      setError(msg || "Đã xảy ra lỗi khi cập nhật.");
+      toast.error(msg || "Đã xảy ra lỗi khi cập nhật.");
     } finally {
       setIsSaving(false);
     }
@@ -242,7 +239,6 @@ export default function UserDetailModal({
   const handleToggleActive = async () => {
     if (!user) return;
     setIsSaving(true);
-    setError(null);
     try {
       if (user.isActive) {
         await adminUserService.deactivateUser(user.id);
@@ -254,7 +250,7 @@ export default function UserDetailModal({
     } catch (err: unknown) {
       console.error(err);
       const msg = isAxiosError(err) ? err.response?.data?.message : null;
-      setError(msg || "Lỗi khi thay đổi trạng thái.");
+      toast.error(msg || "Lỗi khi thay đổi trạng thái.");
     } finally {
       setIsSaving(false);
     }
@@ -268,7 +264,6 @@ export default function UserDetailModal({
     if (!confirmDelete) return;
 
     setIsSaving(true);
-    setError(null);
     try {
       await adminUserService.softDeleteUser(user.id);
       onUserUpdated();
@@ -276,7 +271,7 @@ export default function UserDetailModal({
     } catch (err: unknown) {
       console.error(err);
       const msg = isAxiosError(err) ? err.response?.data?.message : null;
-      setError(msg || "Lỗi khi xóa người dùng.");
+      toast.error(msg || "Lỗi khi xóa người dùng.");
     } finally {
       setIsSaving(false);
     }
@@ -345,13 +340,6 @@ export default function UserDetailModal({
 
           {/* Scrollable Form Content */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-white/10">
-            {error && (
-              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 flex-shrink-0 text-red-400 mt-0.5" />
-                <p>{error}</p>
-              </div>
-            )}
-
             <form
               id="user-update-form"
               onSubmit={handleSubmit}

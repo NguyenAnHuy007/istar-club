@@ -34,5 +34,6 @@ public class PermissionGroup {
             inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
     @Builder.Default
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties("permissionGroups")
     private Set<Permission> permissions = new HashSet<>();
 }
