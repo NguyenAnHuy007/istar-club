@@ -269,7 +269,29 @@ erDiagram
 ## 5. Cấu Hình Ứng Dụng (`application.properties`)
 
 ```properties
-app.upload.dir=uploads
+app.upload.dir=${APP_UPLOAD_DIR:uploads}
 spring.servlet.multipart.max-file-size=10MB
 spring.servlet.multipart.max-request-size=15MB
 ```
+
+---
+
+## 6. Triển Khai Sản Xuất (Deployment & Cloud Environment)
+
+### 6.1 Kiến Trúc Triển Khai
+- **Containerization**: Multi-stage Docker build (`maven:3.9.9-eclipse-temurin-21-alpine` build artifact, `eclipse-temurin:21-jre-alpine` runtime).
+- **Backend Host**: Render Web Service (Docker runtime, khu vực Singapore).
+- **Database**: Supabase PostgreSQL 17 (Khu vực Seoul `ap-northeast-2`).
+- **Connection Mode**: Supavisor Session Pooler (port 5432) đảm bảo tương thích hoàn toàn mạng IPv4 trên môi trường container Render Free tier.
+
+### 6.2 Danh Mục Biến Môi Trường (Environment Variables)
+| Biến môi trường | Mặc định (Local) | Mô tả sản xuất |
+|---|---|---|
+| `PORT` | `8080` | Render tự cấp cổng động (Dynamic Port binding) |
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/istar_club` | JDBC URL kết nối Supavisor Session Pooler: `jdbc:postgresql://aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require` |
+| `SPRING_DATASOURCE_USERNAME` | `postgres` | `postgres.atslyprrcnzpfvmhsvxm` |
+| `SPRING_DATASOURCE_PASSWORD` | `123456` | Mật khẩu database Supabase |
+| `JWT_SECRET` | *Secret mặc định* | Khóa ký JWT bảo mật |
+| `JWT_EXPIRATION_MS` | `86400000` | Thời hạn hiệu lực JWT token (ms) |
+| `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:*,http://127.0.0.1:*,https://*` | Danh sách domain CORS được phép kết nối |
+| `APP_UPLOAD_DIR` | `uploads` | Thư mục lưu trữ media/ảnh upload |
