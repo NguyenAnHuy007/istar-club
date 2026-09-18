@@ -21,7 +21,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserDto>> register(@Valid @RequestBody RegisterRequest request) {
         UserDto userDto = authService.register(request);
-        return ResponseEntity.ok(ApiResponse.success("Đăng ký thành công!", userDto));
+        return ResponseEntity.ok(ApiResponse.success("Đăng ký thành công! Tài khoản của bạn đang chờ Quản trị viên kích hoạt.", userDto));
     }
 
     @PostMapping("/login")

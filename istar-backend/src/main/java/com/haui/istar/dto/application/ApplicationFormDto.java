@@ -1,9 +1,7 @@
 package com.haui.istar.dto.application;
 
 import com.haui.istar.model.enums.ApplicationStatus;
-import com.haui.istar.model.enums.Department;
-import com.haui.istar.model.enums.SubDepartment;
-import com.haui.istar.model.enums.School;
+import com.haui.istar.model.enums.Area;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -25,16 +24,22 @@ public class ApplicationFormDto {
     private LocalDate birthday;
     private String address;
     private String phoneNumber;
-    private Department department;
-    private SubDepartment subDepartment;
-    private School school;
+    private String school;
     private String majorClass;
     private String course;
-    private String reasonDepartment;
     private String knowIStar;
     private String reasonIStarer;
-    private String cvUrl;
+    private String facebookUrl;
+    private String avatarUrl;
     private ApplicationStatus status;
+    private Area area;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime checkedInAt;
+    private LocalDateTime interviewedAt;
+    private Long version;
+    
+    private Long recruitmentId;
+    private String recruitmentName;
+    private List<ApplicationDepartmentDto> applicationDepartments;
 }

@@ -2,6 +2,8 @@ package com.haui.istar.repository.specification;
 
 import com.haui.istar.dto.user.UserSearchCriteria;
 import com.haui.istar.model.User;
+import com.haui.istar.model.UserDepartment;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -14,9 +16,7 @@ public class UserSpecification {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            if (criteria.getId() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("id"), criteria.getId()));
-            }
+
 
             if (criteria.getKeyword() != null && !criteria.getKeyword().isEmpty()) {
                 String keyword = "%" + criteria.getKeyword().toLowerCase() + "%";
@@ -34,12 +34,10 @@ public class UserSpecification {
             }
 
             if (criteria.getDepartment() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("department"), criteria.getDepartment()));
+                Join<User, UserDepartment> udJoin = root.join("userDepartments");
+                predicates.add(criteriaBuilder.equal(udJoin.get("department"), criteria.getDepartment()));
             }
 
-            if (criteria.getSubDepartment() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("subDepartment"), criteria.getSubDepartment()));
-            }
 
             if (criteria.getGenerationId() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("generation").get("id"), criteria.getGenerationId()));
@@ -53,11 +51,8 @@ public class UserSpecification {
                 predicates.add(criteriaBuilder.equal(root.get("isActive"), criteria.getIsActive()));
             }
 
-            if (criteria.getIsDeleted() != null) {
-                predicates.add(criteriaBuilder.equal(root.get("isDeleted"), criteria.getIsDeleted()));
-            } else {
-                predicates.add(criteriaBuilder.equal(root.get("isDeleted"), false));
-            }
+            // Always exclude deleted users from search results
+            predicates.add(criteriaBuilder.equal(root.get("isDeleted"), false));
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };

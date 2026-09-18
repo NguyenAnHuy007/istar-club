@@ -8,8 +8,10 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 @Getter
 @AllArgsConstructor
@@ -19,22 +21,56 @@ public class UserPrincipal implements UserDetails {
     private String username;
     private String email;
     private String password;
-    private Role role;
+    private boolean enabled;
+    private Set<String> roles;
+    private Set<String> permissions;
     private Collection<? extends GrantedAuthority> authorities;
 
     public static UserPrincipal create(User user) {
-        Collection<GrantedAuthority> authorities = Collections.singletonList(
-                new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
-        );
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        Set<String> roles = user.getRoleCodes();
+        for (String role : roles) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+            if ("ADMIN".equalsIgnoreCase(role)) {
+                authorities.add(new SimpleGrantedAuthority("ADMIN"));
+            }
+        }
+
+        Set<String> permissions = user.getAllPermissionCodes();
+        for (String code : permissions) {
+            String permAuth = code.startsWith("PERM_") ? code : "PERM_" + code;
+            authorities.add(new SimpleGrantedAuthority(permAuth));
+            if (!permAuth.equals(code)) {
+                authorities.add(new SimpleGrantedAuthority(code));
+            }
+        }
+
+        boolean enabled = Boolean.TRUE.equals(user.getIsActive());
 
         return new UserPrincipal(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getPassword(),
-                user.getRole(),
-                authorities
-        );
+                enabled,
+                roles,
+                permissions,
+                authorities);
+    }
+
+    public String getRole() {
+        if (roles != null && roles.contains("ADMIN")) {
+            return "ADMIN";
+        }
+        return (roles == null || roles.isEmpty()) ? "MEMBER" : roles.iterator().next();
+    }
+
+    public Role getRoleEnum() {
+        try {
+            return Role.valueOf(getRole());
+        } catch (Exception e) {
+            return Role.MEMBER;
+        }
     }
 
     @Override
@@ -69,8 +105,6 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
 }
-
-

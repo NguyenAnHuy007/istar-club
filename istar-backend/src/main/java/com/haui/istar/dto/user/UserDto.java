@@ -8,7 +8,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.jspecify.annotations.NonNull;
 
+import com.haui.istar.model.UserDepartment;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -23,21 +27,40 @@ public class UserDto {
     private String lastName;
     private LocalDate birthday;
     private String address;
-    private Department department;
-    private SubDepartment subDepartment;
-    private School school;
+    private String school;
     private String majorClass;
     private String course;
     private String phoneNumber;
     private Boolean isActive;
     private Boolean isDeleted;
     private Role role;
-    private Position position;
+    private Set<String> roles;
+    private Set<String> permissions;
+    private Position position; // Vẫn giữ chức vụ cấp câu lạc bộ
     private Area area;
     private Long generationId;
     private String generationName;
+    private List<UserDepartmentDto> userDepartments;
 
     public static UserDto fromEntity(@NonNull User user) {
+        List<UserDepartmentDto> depts = new ArrayList<>();
+        if (user.getUserDepartments() != null) {
+            for (UserDepartment ud : user.getUserDepartments()) {
+                depts.add(UserDepartmentDto.builder()
+                        .id(ud.getId())
+                        .department(ud.getDepartment())
+                        .position(ud.getPosition())
+                        .build());
+            }
+        }
+
+        Set<String> roles = user.getRoleCodes();
+        Set<String> perms = user.getAllPermissionCodes();
+        Role computedRole = Role.MEMBER;
+        try {
+            computedRole = Role.valueOf(user.getPrimaryRole());
+        } catch (Exception ignored) {}
+
         return UserDto.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -46,19 +69,20 @@ public class UserDto {
                 .lastName(user.getLastName())
                 .birthday(user.getBirthday())
                 .address(user.getAddress())
-                .department(user.getDepartment())
-                .subDepartment(user.getSubDepartment())
                 .school(user.getSchool())
                 .majorClass(user.getMajorClass())
                 .course(user.getCourse())
                 .phoneNumber(user.getPhoneNumber())
                 .isActive(user.getIsActive())
                 .isDeleted(user.getIsDeleted())
-                .role(user.getRole())
+                .role(computedRole)
+                .roles(roles)
+                .permissions(perms)
                 .position(user.getPosition())
                 .area(user.getArea())
                 .generationId(user.getGeneration() != null ? user.getGeneration().getId() : null)
                 .generationName(user.getGeneration() != null ? user.getGeneration().getName() : null)
+                .userDepartments(depts)
                 .build();
     }
 }

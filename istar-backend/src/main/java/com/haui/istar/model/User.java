@@ -3,12 +3,18 @@ package com.haui.istar.model;
 import com.haui.istar.model.enums.*;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -40,9 +46,8 @@ public class User {
     @Column(length = 255)
     private String address;
 
-    @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    private School school;
+    private String school;
 
     @Column(name = "major_class", length = 100)
     private String majorClass;
@@ -50,22 +55,12 @@ public class User {
     @Column(length = 10)
     private String course; // K16, K17, K18...
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 50)
-    private Department department;
-
-    @Enumerated(EnumType.STRING)
-    @Column(length = 50)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
-    private SubDepartment subDepartment = SubDepartment.NONE;
+    private Set<UserDepartment> userDepartments = new HashSet<>();
 
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    @Builder.Default
-    private Role role = Role.MEMBER;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -89,19 +84,76 @@ public class User {
     @Builder.Default
     private Boolean isDeleted = false;
 
+    @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "user_permissions",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "permission_id")
+    )
+    @Builder.Default
+    private Set<Permission> permissions = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "user_permission_groups",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "group_id")
+    )
+    @Builder.Default
+    private Set<PermissionGroup> permissionGroups = new HashSet<>();
+
+    public Set<String> getAllPermissionCodes() {
+        Set<String> codes = new HashSet<>();
+        if (permissions != null) {
+            for (Permission p : permissions) {
+                codes.add(p.getCode());
+            }
+        }
+        if (permissionGroups != null) {
+            for (PermissionGroup pg : permissionGroups) {
+                if (pg.getPermissions() != null) {
+                    for (Permission p : pg.getPermissions()) {
+                        codes.add(p.getCode());
+                    }
+                }
+            }
+        }
+        return codes;
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    public boolean isAdmin() {
+        if (permissionGroups == null) return false;
+        return permissionGroups.stream().anyMatch(pg -> "ADMIN".equalsIgnoreCase(pg.getCode()));
+    }
+
+    public Set<String> getRoleCodes() {
+        Set<String> roles = new HashSet<>();
+        if (permissionGroups != null) {
+            for (PermissionGroup pg : permissionGroups) {
+                if (pg.getCode() != null) {
+                    roles.add(pg.getCode());
+                }
+            }
+        }
+        if (roles.isEmpty()) {
+            roles.add("MEMBER");
+        }
+        return roles;
+    }
+
+    public String getPrimaryRole() {
+        if (isAdmin()) {
+            return "ADMIN";
+        }
+        Set<String> roles = getRoleCodes();
+        return roles.isEmpty() ? "MEMBER" : roles.iterator().next();
     }
 }

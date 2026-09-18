@@ -4,8 +4,10 @@ import lombok.Getter;
 
 @Getter
 public enum Role {
-    ADMIN("Admin"),
-    HEAD("Trưởng ban"),
+    ADMIN("Quản trị viên"),
+    RECEPTIONIST("Lễ tân"),
+    INTERVIEWER("Phỏng vấn viên"),
+    REVIEWER("Hội đồng xét duyệt"),
     MEMBER("Thành viên");
 
     private final String displayName;
@@ -13,5 +15,4 @@ public enum Role {
     Role(String displayName) {
         this.displayName = displayName;
     }
-
 }

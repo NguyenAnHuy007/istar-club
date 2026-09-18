@@ -1,6 +1,7 @@
 package com.haui.istar.controller.admin;
 
 import com.haui.istar.dto.common.ApiResponse;
+import com.haui.istar.dto.user.BulkUserActionRequest;
 import com.haui.istar.dto.user.UpdateUserRequest;
 import com.haui.istar.dto.user.UserDto;
 import com.haui.istar.dto.user.UserSearchCriteria;
@@ -21,7 +22,6 @@ import com.haui.istar.model.enums.Position;
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
@@ -31,11 +31,13 @@ public class AdminUserController {
      * GET /api/admin/users?page=0&size=10
      */
     @GetMapping
+    @PreAuthorize("hasAuthority('PERM_USER_VIEW')")
     public ResponseEntity<ApiResponse<Page<UserDto>>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "9999999") int size
+            @RequestParam(defaultValue = "100") int size
     ) {
-        Page<UserDto> users = adminUserService.getAllUsers(page, size);
+        int safeSize = Math.min(Math.max(1, size), 500);
+        Page<UserDto> users = adminUserService.getAllUsers(page, safeSize);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách người dùng thành công", users));
     }
 
@@ -44,6 +46,7 @@ public class AdminUserController {
      * POST /api/admin/users/search
      */
     @PostMapping("/search")
+    @PreAuthorize("hasAuthority('PERM_USER_VIEW')")
     public ResponseEntity<ApiResponse<Page<UserDto>>> searchUsers(
             @RequestBody UserSearchCriteria criteria
     ) {
@@ -56,6 +59,7 @@ public class AdminUserController {
      * GET /api/admin/users/{id}
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERM_USER_VIEW')")
     public ResponseEntity<ApiResponse<UserDto>> getUserById(@PathVariable Long id) {
         UserDto user = adminUserService.getUserById(id);
         return ResponseEntity.ok(ApiResponse.success("Lấy thông tin người dùng thành công", user));
@@ -66,12 +70,16 @@ public class AdminUserController {
      * PUT /api/admin/users/{id}
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERM_USER_EDIT')")
     public ResponseEntity<ApiResponse<UserDto>> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request
     ) {
-        if (request.getUsername() != null && !request.getUsername().isEmpty()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Không được sửa username"));
+        if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
+            UserDto existingUser = adminUserService.getUserById(id);
+            if (!request.getUsername().trim().equalsIgnoreCase(existingUser.getUsername())) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Không được sửa username"));
+            }
         }
 
         UserDto updatedUser = adminUserService.updateUser(id, request);
@@ -83,6 +91,7 @@ public class AdminUserController {
      * DELETE /api/admin/users/{id}
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERM_USER_DELETE')")
     public ResponseEntity<ApiResponse<Void>> softDeleteUser(@PathVariable Long id) {
         adminUserService.softDeleteUser(id);
         return ResponseEntity.ok(ApiResponse.success("Xóa người dùng thành công", null));
@@ -93,6 +102,7 @@ public class AdminUserController {
      * PUT /api/admin/users/{id}/deactivate
      */
     @PutMapping("/{id}/deactivate")
+    @PreAuthorize("hasAuthority('PERM_USER_EDIT')")
     public ResponseEntity<ApiResponse<Void>> deactivateUser(@PathVariable Long id) {
         adminUserService.deactivateUser(id);
         return ResponseEntity.ok(ApiResponse.success("Vô hiệu hóa tài khoản thành công", null));
@@ -103,9 +113,36 @@ public class AdminUserController {
      * PUT /api/admin/users/{id}/activate
      */
     @PutMapping("/{id}/activate")
+    @PreAuthorize("hasAuthority('PERM_USER_EDIT')")
     public ResponseEntity<ApiResponse<Void>> activateUser(@PathVariable Long id) {
         adminUserService.activateUser(id);
         return ResponseEntity.ok(ApiResponse.success("Kích hoạt tài khoản thành công", null));
+    }
+
+    /**
+     * Vô hiệu hóa hàng loạt tài khoản user
+     * PUT /api/admin/users/bulk-deactivate
+     */
+    @PutMapping("/bulk-deactivate")
+    @PreAuthorize("hasAuthority('PERM_USER_EDIT')")
+    public ResponseEntity<ApiResponse<Void>> bulkDeactivateUsers(
+            @Valid @RequestBody BulkUserActionRequest request
+    ) {
+        adminUserService.bulkDeactivateUsers(request.getUserIds());
+        return ResponseEntity.ok(ApiResponse.success("Vô hiệu hóa các tài khoản đã chọn thành công", null));
+    }
+
+    /**
+     * Xóa mềm hàng loạt tài khoản user
+     * POST /api/admin/users/bulk-delete
+     */
+    @PostMapping("/bulk-delete")
+    @PreAuthorize("hasAuthority('PERM_USER_DELETE')")
+    public ResponseEntity<ApiResponse<Void>> bulkSoftDeleteUsers(
+            @Valid @RequestBody BulkUserActionRequest request
+    ) {
+        adminUserService.bulkSoftDeleteUsers(request.getUserIds());
+        return ResponseEntity.ok(ApiResponse.success("Xóa các người dùng đã chọn thành công", null));
     }
 
     /**

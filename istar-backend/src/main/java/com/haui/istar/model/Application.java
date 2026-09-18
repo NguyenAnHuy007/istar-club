@@ -1,29 +1,32 @@
 package com.haui.istar.model;
 
 import com.haui.istar.model.enums.ApplicationStatus;
-import com.haui.istar.model.enums.Department;
-import com.haui.istar.model.enums.SubDepartment;
-import com.haui.istar.model.enums.School;
+import com.haui.istar.model.enums.Area;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "applications")
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
 public class Application {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false, length = 100)
+    @Column(nullable = false, length = 100)
     private String email;
 
     @Column(name = "first_name", length = 50)
@@ -40,9 +43,8 @@ public class Application {
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
-    @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    private School school;
+    private String school;
 
     @Column(name = "major_class", length = 100)
     private String majorClass;
@@ -50,17 +52,13 @@ public class Application {
     @Column(length = 10)
     private String course; // K16, K17, K18...
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private Department department;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recruitment_id")
+    private Recruitment recruitment;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 50)
+    @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private SubDepartment subDepartment = SubDepartment.NONE;
-
-    @Column(nullable = false, length = 1000)
-    private String reasonDepartment;
+    private Set<ApplicationDepartment> applicationDepartments = new HashSet<>();
 
     @Column(nullable = false, length = 1000)
     private String knowIStar;
@@ -68,33 +66,44 @@ public class Application {
     @Column(nullable = false, length = 1000)
     private String reasonIStarer;
 
-    @Column(length = 500)
-    private String avatarUrl;
+    @Column(name = "facebook_url", length = 255)
+    private String facebookUrl;
 
     @Column(length = 500)
-    private String cvUrl;
+    private String avatarUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
     private ApplicationStatus status = ApplicationStatus.SUBMITTED;
 
-    @Column(updatable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    @Builder.Default
+    private Area area = Area.NINH_BINH;
+
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private Boolean isDeleted = false;
+
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @Column(name = "checked_in_at")
+    private LocalDateTime checkedInAt;
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    @Column(name = "interviewed_at")
+    private LocalDateTime interviewedAt;
+
+    @Version
+    private Long version;
 
     @ManyToOne
-    @JoinColumn(name= "user_id")
+    @JoinColumn(name = "user_id")
     private User user;
 }

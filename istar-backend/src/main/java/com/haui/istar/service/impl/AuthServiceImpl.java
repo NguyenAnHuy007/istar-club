@@ -3,10 +3,13 @@ package com.haui.istar.service.impl;
 import com.haui.istar.dto.auth.LoginRequest;
 import com.haui.istar.dto.auth.LoginResponse;
 import com.haui.istar.dto.auth.RegisterRequest;
+import com.haui.istar.dto.user.UserDepartmentRequest;
 import com.haui.istar.dto.user.UserDto;
 import com.haui.istar.exception.BadRequestException;
 import com.haui.istar.model.User;
-import com.haui.istar.model.enums.Role;
+import com.haui.istar.model.UserDepartment;
+import com.haui.istar.model.enums.Position;
+import com.haui.istar.repository.PermissionGroupRepository;
 import com.haui.istar.repository.UserRepository;
 import com.haui.istar.security.JwtTokenProvider;
 import com.haui.istar.security.UserPrincipal;
@@ -26,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final PermissionGroupRepository permissionGroupRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
@@ -44,7 +48,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Email đã tồn tại!");
         }
 
-        // Tạo user mới với role và position mặc định là MEMBER
+        // Tạo user mới với position mặc định là MEMBER
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -53,18 +57,28 @@ public class AuthServiceImpl implements AuthService {
                 .lastName(request.getLastName())
                 .birthday(request.getBirthday())
                 .address(request.getAddress())
-                .department(request.getDepartment())
-                .subDepartment(request.getSubDepartment())
                 .school(request.getSchool())
                 .majorClass(request.getMajorClass())
                 .course(request.getCourse())
-                .role(Role.MEMBER)
+                .isActive(false)
                 .build();
 
-        // Validate business rules (area constraint, subDepartment)
-        // Không validate position limit vì user mới luôn là MEMBER
-        userValidator.validateAreaConstraint(user);
-        userValidator.validateSubDepartment(user);
+        permissionGroupRepository.findByCode("MEMBER").ifPresent(mg -> user.getPermissionGroups().add(mg));
+
+        if (request.getUserDepartments() != null) {
+            for (com.haui.istar.dto.user.SelfUserDepartmentRequest udReq : request.getUserDepartments()) {
+                if (udReq != null && udReq.getDepartment() != null) {
+                    UserDepartment ud = UserDepartment.builder()
+                            .user(user)
+                            .department(udReq.getDepartment())
+                            .position(Position.MEMBER)
+                            .build();
+                    user.getUserDepartments().add(ud);
+                }
+            }
+        }
+
+        userValidator.validateUser(user, null);
 
         User savedUser = userRepository.save(user);
 
@@ -76,9 +90,7 @@ public class AuthServiceImpl implements AuthService {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsername(),
-                        request.getPassword()
-                )
-        );
+                        request.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = tokenProvider.generateToken(authentication);
@@ -92,7 +104,9 @@ public class AuthServiceImpl implements AuthService {
                 .id(userPrincipal.getId())
                 .username(userPrincipal.getUsername())
                 .email(userPrincipal.getEmail())
-                .role(userPrincipal.getRole())
+                .role(userPrincipal.getRoleEnum())
+                .roles(userPrincipal.getRoles())
+                .permissions(userPrincipal.getPermissions())
                 .build();
     }
 
